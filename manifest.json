@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "Easy Languages Dictionary",
+  "version": "0.0.0",
+
+  "description": "Adds interactive dictionary to subtitles of videos on the Easy Languages YouTube channels.",
+
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/watch?v=*"],
+      "js": ["./content/index.js"]
+    }
+  ],
+
+  "background": {
+    "type": "module",
+    "service_worker": "background/index.js"
+  },
+
+  "host_permissions": [
+    "https://translate.google.com/",
+    "https://www.bing.com/"
+  ],
+
+  "web_accessible_resources": [
+    {
+      "resources": ["langs.csv"],
+      "matches": ["https://www.youtube.com/*"]
+    }
+  ]
+}
