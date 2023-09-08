@@ -35,41 +35,54 @@ export function createTranslationBubble(overlayElt, translation) {
   const bubbleOpaqueness = 0.6;
   bubbleElt.style.background = `rgba(0, 0, 0, ${bubbleOpaqueness})`;
 
-  // Dimension bubble.
-  const video = document.querySelector('video');
-  // In CSS pixels rather than 'video pixels'. This is why we can't use
-  // `video.videoHeight`.
-  const videoHeight = Number(video.style.height.match(/(.*?)px/)[1]);
-  bubbleElt.style.fontSize = `${0.05*videoHeight}px`;
-  bubbleElt.style.textShadow =
-      `${0.001*videoHeight}px ${0.002*videoHeight}px ` +
-      `${0.002*videoHeight}px black`;
-  bubbleElt.style.padding =
-      `${0.01*videoHeight}px ${0.02*videoHeight}px`;
-  bubbleElt.style.borderRadius = `${0.02*videoHeight}px`;
+  // Prevent 'mouseenter' event from firing when entering the bubble -
+  // otherwise, hovering over the bubble will make it disappear.
+  bubbleElt.style.pointerEvents = 'none';
 
   // Create speech bubble handle.
   const speechBubbleHandle = document.createElement('span');
   bubbleElt.prepend(speechBubbleHandle);
   speechBubbleHandle.style.position = 'absolute';
-  const handleWidth = 0.035 * videoHeight;
-  speechBubbleHandle.style.left = `calc(50% - ${handleWidth/2}px)`;
   speechBubbleHandle.style.top = '100%';
-  // Make border transparent apart from top 'wedge'.
-  speechBubbleHandle.style.border = `${handleWidth/2}px solid transparent`;
-  speechBubbleHandle.style.borderTopColor =
-      `rgba(0, 0, 0, ${bubbleOpaqueness})`;
 
-  // Prevent 'mouseenter' event from firing when entering the bubble -
-  // otherwise, hovering over the bubble will make it disappear.
-  bubbleElt.style.pointerEvents = 'none';
+  // Position and size bubble.
+  const video = document.querySelector('video');
+  const positionAndSizeBubble = () => {
+    // In CSS pixels rather than 'video pixels'. This is why we can't use
+    // `video.videoHeight`.
+    const videoHeight = video.offsetHeight;
+    bubbleElt.style.fontSize = `${0.05*videoHeight}px`;
+    bubbleElt.style.textShadow =
+        `${0.001*videoHeight}px ${0.002*videoHeight}px ` +
+        `${0.002*videoHeight}px black`;
+    bubbleElt.style.padding =
+        `${0.01*videoHeight}px ${0.02*videoHeight}px`;
+    bubbleElt.style.borderRadius = `${0.02*videoHeight}px`;
+    const handleWidth = 0.035 * videoHeight;
+    speechBubbleHandle.style.left = `calc(50% - ${handleWidth/2}px)`;
+    // Make border of handle element transparent apart from top 'wedge'.
+    speechBubbleHandle.style.border = `${handleWidth/2}px solid transparent`;
+    speechBubbleHandle.style.borderTopColor =
+        `rgba(0, 0, 0, ${bubbleOpaqueness})`;
+  };
+  positionAndSizeBubble();
 
   overlayElt.appendChild(bubbleElt);
+
+  // Element needs to be repositioned and resized when container is resized.
+  new ResizeObserver((entries, observer) => {
+    if (document.body.contains(overlayElt)) {
+      positionAndSizeBubble();
+    } else {
+      observer.disconnect();
+    }
+  }).observe(overlayElt); // Observe parent rather than video container.
 }
 
 
 /**
- * Remove all translation bubbles.
+ * Remove all translation bubbles. The respective ResizeObservers will remove
+ * themselves next time they execute.
  */
 export function removeTranslationBubbles() {
   document.querySelectorAll('.translation-bubble')

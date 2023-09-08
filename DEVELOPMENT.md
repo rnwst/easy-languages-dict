@@ -5,7 +5,6 @@
 ### High Priority:
 - show translations both with and without context
 - fix AJAX page navigation
-- reposition translation overlay elements and bubbles on resize
 - implement time navigation to sentence beginning by pressing left arrow key
 - replace `getLangData()` with a constructor returning an object of class `lang`
 - move `tesseract` workers to background to prevent delay when loading video

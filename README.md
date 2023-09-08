@@ -35,7 +35,6 @@ All languages available on the Easy Languages channels should be supported by Ea
 ## Known issues
 
 - YouTube uses AJAX, which results in the content script not working right when navigating to a new page within YouTube, requiring a reload of the page. A fix for this is in the works.
-- When resizing a video, the overlaid elements are not automatically repositioned.
 - Contextual translations by Google or Bing Translate are often not very good. I intend to fix this by showing both contextual and non-contextual word translations. Currently, only contextual translations are shown. DeepL seems to offer better contextual translations, but I haven't implemented a DeepL translator yet.
 - OCR doesn't yet work as well as it should. A threshold is applied so that words that are OCRed at less than 80% confidence are ignored. This sometimes results in words not being recognized. This can likely be improved by supplying appropriate configuration options to `tesseract`, to increase confidences.
 - Currently, in videos that mix languages (such as [this one](https://www.youtube.com/watch?v=ySJa8swxrJc)), only the first language appearing in the video title works.
