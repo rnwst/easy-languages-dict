@@ -45,23 +45,25 @@ async function main() {
 
       // If text is still the same, dont' do anything else.
       if (data.text === previouslyOCRedText) {
-        timeout(REST_TIME);
+        await timeout(REST_TIME);
         continue;
       }
       previouslyOCRedText = data.text;
-
-      const words = data.words;
-
-      // If translation overlay elements or bubbles already exist (from previous
-      // loops), remove them.
       removeWordOverlays();
       removeTranslationBubbles();
 
+      if (data.confidence < 65) {
+        await timeout(REST_TIME);
+        continue;
+      }
+
+      const words = data.words;
+
       // Loop through each OCRed word.
       words.forEach((word, wordIndex) => {
-        // Only translate words which aren't numbers, are OCRed at high
-        // confidence, and are not dashes.
-        if (!word.is_numeric && word.confidence > 80 && word.text != '-') {
+        // Only translate words which aren't numbers or dashes.
+        const isNumeric = (str) => !isNaN(str);
+        if (!isNumeric(word.text) && word.text != '-') {
           const wordOverlay = createWordOverlay(word);
           wordOverlay.addEventListener('mouseenter', () => {
             removeTranslationBubbles();

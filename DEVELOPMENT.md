@@ -8,8 +8,6 @@
 - implement time navigation to sentence beginning by pressing left arrow key
 - replace `getLangData()` with a constructor returning an object of class `lang`
 - move `tesseract` workers to background to prevent delay when loading video
-- stop using `.is_numeric` in content script because it is unreliable
-- apply `tesseract` page segmentation mode 'single text line'
 - implement DeepL translator
 - improve test coverage
 - move all translation functionality to background script
