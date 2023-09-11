@@ -75,6 +75,37 @@ export async function langSupported() {
 
 
 /**
+ * Intercept arrow keys and call event handler to rewind or fast-forward video.
+ * @param {function} handler - Function to call to handle
+ * rewind/fastfwd
+ */
+export function addRewindFastfwdListener(handler) {
+  const keyEventHandler = (event) => {
+    const key = event.code;
+    const rewindKeys = ['ArrowLeft', 'KeyH']; // Make vim users feel at home.
+    const fastfwdKeys = ['ArrowRight', 'KeyL'];
+    if ((rewindKeys.includes(key) || fastfwdKeys.includes(key)) &&
+        // Don't intercept keys when typing comment.
+        !document.activeElement.getAttribute('contenteditable') &&
+        // Don't intercept keys when typing in search box.
+        document.activeElement.tagName != 'INPUT') {
+      event.stopPropagation();
+      // Prevent page from scrolling horizontally if arrow keys are pressed.
+      event.preventDefault();
+      const type = rewindKeys.includes(key) ? 'rewind' : 'fastfwd';
+      handler(type);
+    }
+  };
+  // Call 'keydown' event handler during capturing phase, on the `document`
+  // element. This results in the event handler being called before any of YT's
+  // event handlers are called, which are likely bubbling and attached to
+  // `document.body`. Capturing and bubbling events are explained here:
+  // http://www.quirksmode.org/js/events_order.html
+  document.addEventListener('keydown', keyEventHandler, {capture: true});
+}
+
+
+/**
  * We need to check if the video is playing. There is no `.playing` attribute,
  * but we can define one.
  */

@@ -3,8 +3,14 @@
 import translateWord from './translateWord.js';
 import takeScreenshot from './takeScreenshot.js';
 import {REST_TIME} from './config.js';
-import {timeout, isEasyLanguagesVideo, langSupported, getLang}
-  from './utils.js';
+import {
+  timeout,
+  isEasyLanguagesVideo,
+  langSupported,
+  getLang,
+  addRewindFastfwdListener,
+} from './utils.js';
+import {rewind, fastfwd} from './seek.js';
 import {createWordOverlay, removeWordOverlays} from './wordOverlays.js';
 import {createTranslationBubble, removeTranslationBubbles}
   from './translationBubbles.js';
@@ -30,7 +36,10 @@ async function main() {
   await worker.loadLanguage(tesseractCode);
   await worker.initialize(tesseractCode);
 
-  const video = document.querySelector('video');
+  addRewindFastfwdListener((type) => {
+    (type === 'rewind') && rewind();
+    (type === 'fastfwd') && fastfwd();
+  });
 
   /**
    * Variable to store text to prevent unnecessary recreation of translation
@@ -40,7 +49,7 @@ async function main() {
   let previouslyOCRedText = '';
 
   while (true) {
-    if (video.playing) {
+    if (document.querySelector('video').playing) {
       const {data} = await worker.recognize(takeScreenshot());
 
       // If text is still the same, dont' do anything else.
