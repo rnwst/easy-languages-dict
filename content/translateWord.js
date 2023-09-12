@@ -19,7 +19,7 @@ export function escapeHTML(text) {
  * @param {number} wordIndex - Index of word to be translated in context
  * @return {string} - String to be sent to translation API
  */
-function createStringToBeTranslated(sentence, wordIndex) {
+function wrapWordInSpanTags(sentence, wordIndex) {
   return sentence.map((word, index) => {
     word = escapeHTML(word);
     return (index === wordIndex) ? '<span>' + word + '</span>' : word;
@@ -49,7 +49,7 @@ export function parseResponse(response) {
 
 
 /**
- * Return word wrapped in `<span>` tags. Return
+ * Return word wrapped in `<span>` tags.
  * @param {string} translation - Received translation
  * @return {string} - Word wrapped in `<span>` tags
  */
@@ -66,7 +66,7 @@ export function wordInSpanTags(translation) {
  * @return {string} - Word without punctuation
  */
 export function removePunctuation(wordWithPunctuation) {
-  return wordWithPunctuation.match(/^(?<word>.*?)[.,:;?]?$/).groups.word;
+  return wordWithPunctuation.match(/^(?<word>.*?)[.,:;?!]?$/).groups.word;
 }
 
 
@@ -87,15 +87,26 @@ export function handleTranslationError(error) {
 
 
 /**
- * Translate a word from a sentence. Executed in content script. This function
- * is API agnostic, and delegates the actual translation to the API-specific
- * function executed in the background script. It communicates with the
- * background script by exchanging messages.
+ * Translate text by making a request to the background script and parsing the
+ * response (and dealing with potential errors).
+ * @param {string} text - Text to be translated
+ * @param {object} translationOptions - Translation options (languages)
+ */
+async function translate(text, translationOptions) {
+  // Firefox supports usage of the `chrome` object for compatibility reasons.
+  return chrome.runtime.sendMessage({text, translationOptions})
+      .then((response) => parseResponse(response))
+      .catch((error) => handleTranslationError(error));
+}
+
+
+/**
+ * Translate a word from a sentence.
  *
- * Context-specific word translation relies on most translation APIs being HTML
- * capable. By wrapping the word to be translated in a tag, its translated
- * equivalent may be identified from the response (as it is wrapped in the same
- * tag, ideally at least).
+ * Translate a word both in and out of context. Context-specific word
+ * translation relies on the translation API being HTML capable. By wrapping the
+ * word to be translated in a tag, its translated equivalent may be identified
+ * from the response (as it is wrapped in the same tag, ideally at least).
  *
  * @param {array} sentence - List of words forming sentence containing word to
  * be translated
@@ -105,24 +116,35 @@ export function handleTranslationError(error) {
  */
 export default async function translateWord(
     sentence, wordIndex, translationOptions) {
-  const stringToBeTranslated = createStringToBeTranslated(sentence, wordIndex);
-  // Firefox supports usage of the `chrome` object for compatibility reasons.
-  return chrome.runtime.sendMessage({stringToBeTranslated, translationOptions})
-      .then((response) => {
-        const parsedResponse = parseResponse(response);
-        // Google Translate quite frequently fails at contextual translation,
-        // and returns a translation which doesn't contain any `<span>` tags. If
-        // that happens, the word needs to be translated without context
-        // instead.
-        if (wordInSpanTags(parsedResponse)) {
-          return removePunctuation(wordInSpanTags(parsedResponse));
-        } else {
-          const stringToBeTranslated =
-              removePunctuation(escapeHTML(sentence[wordIndex]));
-          return chrome.runtime
-              .sendMessage({stringToBeTranslated, translationOptions})
-              .then((response) => parseResponse(response));
-        }
-      })
-      .catch((error) => handleTranslationError(error));
+  const word = sentence[wordIndex];
+  const wordWithContext = wrapWordInSpanTags(sentence, wordIndex);
+  const outOfContextTranslationPromise =
+    translate(word, translationOptions)
+        .then((translation) => removePunctuation(translation));
+  const inContextTranslationPromise =
+    translate(wordWithContext, translationOptions)
+        .then((translation) => {
+          // Google and Bing Translate frequently fail at contextual
+          // translation. Google often returns a translation which doesn't
+          // contain any `<span>` tags, and Bing often returns a translation
+          // where the `<span>` tags are empty.
+          const translatedWord = removePunctuation(wordInSpanTags(translation));
+          if (!translatedWord || (translatedWord === '')) {
+            return '-';
+          } else {
+            return translatedWord;
+          }
+        });
+  const outOfContextTranslation = await outOfContextTranslationPromise;
+  const inContextTranslation = await inContextTranslationPromise;
+  if (outOfContextTranslation.toLowerCase() ===
+      inContextTranslation.toLowerCase()) {
+    return inContextTranslation;
+  } else {
+    return '' +
+        `<p><span style='font-size: 0.65em'>Out of context:<br></span>` +
+        `${outOfContextTranslation.toLowerCase()}</p>` +
+        `<p><span style='font-size: 0.65em'>In context:<br></span>` +
+        `${inContextTranslation}</p>`;
+  }
 }

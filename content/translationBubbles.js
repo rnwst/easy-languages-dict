@@ -14,14 +14,15 @@ export function createTranslationBubble(overlayElt, translation) {
 
   // Position bubble.
   bubbleElt.style.position = 'absolute';
-  bubbleElt.style.bottom = '0';
+  bubbleElt.style.bottom = '3em';
   bubbleElt.style.left = '50%';
-  bubbleElt.style.transform = 'translate(-50%, -130%)';
+  bubbleElt.style.transform = 'translateX(-50%)';
   // Show bubble on top of video.
   bubbleElt.style.zIndex = 12;
   // This prevents linebreaks from being inserted after every word, to avoid
   // overflowing the parent element.
   bubbleElt.style.width = 'max-content';
+  bubbleElt.style.maxWidth = '9em';
 
   // Fill and style bubble.
   bubbleElt.innerHTML = translation;
@@ -29,7 +30,6 @@ export function createTranslationBubble(overlayElt, translation) {
   // interest of coherent style, the same or a similar font shall be used.
   bubbleElt.style.fontFamily =
       'Tahoma, DejaVu Sans Condensed, sans-serif';
-  bubbleElt.style.textAlign = 'center';
   // Off-white text color to match the appearance of the subtitle text.
   bubbleElt.style.color = '#ddd';
   const bubbleOpaqueness = 0.6;
@@ -51,7 +51,9 @@ export function createTranslationBubble(overlayElt, translation) {
     // In CSS pixels rather than 'video pixels'. This is why we can't use
     // `video.videoHeight`.
     const videoHeight = video.offsetHeight;
-    bubbleElt.style.fontSize = `${0.05*videoHeight}px`;
+    // `0.05*videoHeight` is the size of the main text. The English translation
+    // below is around 22% smaller.
+    bubbleElt.style.fontSize = `${0.9*0.05*videoHeight}px`;
     bubbleElt.style.textShadow =
         `${0.001*videoHeight}px ${0.002*videoHeight}px ` +
         `${0.002*videoHeight}px black`;

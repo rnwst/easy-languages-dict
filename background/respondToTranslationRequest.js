@@ -33,7 +33,7 @@ export function genDictName(translationOptions) {
  */
 export default function respondToTranslationRequest(
     message, sender, sendResponse) {
-  const text = message.stringToBeTranslated;
+  const text = message.text;
   const options = message.translationOptions;
 
   const dictName = genDictName(options);
