@@ -34,9 +34,8 @@ All languages available on the Easy Languages channels should be supported by Ea
 
 ## Known issues
 
-- YouTube uses AJAX, which results in the content script not working right when navigating to a new page within YouTube, requiring a reload of the page. A fix for this is in the works.
 - Currently, in videos that mix languages (such as [this one](https://www.youtube.com/watch?v=ySJa8swxrJc)), only the first language appearing in the video title works.
-- Most languages are untested so far. That being said, all supported languages should work *in theory*.
+- Most languages are untested so far.
 
 ## License
 

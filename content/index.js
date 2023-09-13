@@ -9,8 +9,8 @@ import {
   langSupported,
   getLang,
   addRewindFastfwdListener,
+  removeRewindFastfwdListener,
 } from './utils.js';
-import {rewind, fastfwd} from './seek.js';
 import {createWordOverlay, removeWordOverlays} from './wordOverlays.js';
 import {createTranslationBubble, removeTranslationBubbles}
   from './translationBubbles.js';
@@ -21,25 +21,23 @@ import getLangData from '../utils/getLangData.js';
  * Main function.
  */
 async function main() {
+  const videoURL = document.URL;
   if (!(await isEasyLanguagesVideo()) || !(await langSupported())) {
     return;
   }
+
+  addRewindFastfwdListener();
 
   // TBD: Move OCR to background script!
   const {createWorker} = require('tesseract.js');
 
   const worker = await createWorker();
 
-  const lang= getLang();
+  const lang = getLang();
   const langData = await getLangData();
   const tesseractCode = langData[lang].tesseract;
   await worker.loadLanguage(tesseractCode);
   await worker.initialize(tesseractCode);
-
-  addRewindFastfwdListener((type) => {
-    (type === 'rewind') && rewind();
-    (type === 'fastfwd') && fastfwd();
-  });
 
   /**
    * Variable to store text to prevent unnecessary recreation of translation
@@ -48,10 +46,11 @@ async function main() {
    */
   let previouslyOCRedText = '';
 
-  while (true) {
-    if (document.querySelector('video').playing) {
+  while (document.URL === videoURL) {
+    if (!document.querySelector('video').playing) {
+      await timeout(REST_TIME);
+    } else {
       const {data} = await worker.recognize(takeScreenshot());
-
       // If text is still the same, dont' do anything else.
       if (data.text === previouslyOCRedText) {
         await timeout(REST_TIME);
@@ -90,8 +89,17 @@ async function main() {
         }
       });
     }
-    await timeout(REST_TIME);
   }
+  // Clean up.
+  removeRewindFastfwdListener();
+  worker.terminate();
+  removeWordOverlays();
 }
 
-main();
+// See https://stackoverflow.com/a/34100952. The 'yt-navigate-finish' event
+// cannot be used, since it is dispatched before e.g. the channel name is
+// available (instead, the corresponding query selector returns the channel name
+// of the previously watched video, which led to errors that were difficult to
+// debug). The 'yt-page-data-updated' event  is dispatched once everything is
+// loaded.
+document.addEventListener('yt-page-data-updated', main);
