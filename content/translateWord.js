@@ -54,7 +54,7 @@ export function parseResponse(response) {
  * @return {string} - Word wrapped in `<span>` tags
  */
 export function wordInSpanTags(translation) {
-  return translation.match(/<span>(?<word>.+?)<\/span>/)?.groups?.word;
+  return translation.match(/<span>(?<word>.*?)<\/span>/)?.groups?.word;
 }
 
 
