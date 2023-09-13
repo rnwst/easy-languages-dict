@@ -3,32 +3,46 @@
 ## TBD
 
 ### High Priority:
-- implement time navigation to sentence beginning by pressing left arrow key
-- replace `getLangData()` with a constructor returning an object of class `lang`
 - move `tesseract` workers to background to prevent delay when loading video
-- implement DeepL translator
-- improve test coverage
+- put loading UI element in translation bubble
+- don't block page navigation via Alt+Left/Right
+- display rewind/fast-forward UI element for another 0.7 seconds when it is pressed again
 - move all translation functionality to background script
+- implement DeepL translator
+- add git hooks: https://stackoverflow.com/a/55958779
+- implement `MutationObserver` in `isEasyLanguagesVideo()`
 - if translation error occurs, display error message in small red font
 - use default translation engine instead of Bing Translate
-- write script to produce colored table for README showing languages inside `<foreignObject>`
-- add icon (in multiple sizes)
-- fix strict mode
-- work on cross-browser compatibility (Safari, Firefox)
 - investigate if disabling of service workers due to inactivity has an effect on caching of translations
 - get rid of parcel and implement an auto-reload that actually works to make development easier
+- fix strict mode
+- improve test coverage
+- refactor main function
+- add icon (in multiple sizes)
+- work on cross-browser compatibility (Safari, Firefox)
+- test all supported languages
+- write script to produce colored table for README showing languages inside `<foreignObject>`
+- add browser action to show if extension is active in current tab
+- make extension work on channel landing pages and in miniplayer
+- replace `getLangData()` with a constructor returning an object of class `lang`
 
 ### Low Priority:
+- make videos containing multiple languages work
+- don't obtain Bing Translate authorization data twice when a fetch is already in progress
+- allow choosing translation engine in browser action
 - OCR when seeking and pausing video
 - fix word dimensions to make hovering easier
+- reduce CPU load by creating video timeline with OCRed text and checking if `currentTime` has previously been OCRed
 - reduce CPU load by computing image correlation before OCRing
-- implement extension menu option for choosing translation engine
+- make picture-in-picture mode work
 - implement Yandex Translate
 - allow translation to language other than English with corresponding menu option
 - for Easy English Channel, display whole sentence translation in chosen language underneath English subtitles
 - implement extension menu option for debugging
 - if debug option is enabled, provide button on page to save image to be OCRed
 - display statistics about time spent learning languages and number of words looked up to user
+- sync statistics across devices if enabled
+- translate extension into various languages (will require help of other developers)
 
 
 ## Parcel
