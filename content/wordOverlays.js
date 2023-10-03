@@ -60,14 +60,14 @@ export function createWordOverlay(word) {
 
   document.querySelector('div#movie_player').appendChild(overlayElt);
 
-  // Element needs to be repositioned and resized when container is resized.
+  // Element needs to be repositioned and resized when video is resized.
   new ResizeObserver((entries, observer) => {
     if (document.body.contains(overlayElt)) {
       positionAndSizeOverlay();
     } else {
       observer.disconnect();
     }
-  }).observe(container);
+  }).observe(video);
 
   return overlayElt;
 }
