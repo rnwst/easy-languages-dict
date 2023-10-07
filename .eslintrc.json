@@ -1,9 +1,12 @@
 {
   "env": {
     "browser": true,
-    "es2021": true
+    "webextensions": true,
+    "node": true,
+    "es2021": true,
+    "jest/globals": true
   },
-  "extends": "google",
+  "extends": ["eslint:recommended", "google"],
   "ignorePatterns": [
     "dist/**/*.js",
     "docs/**/*.js"
@@ -12,7 +15,7 @@
     "ecmaVersion": "latest",
     "sourceType": "module"
   },
-  "plugins": ["import"],
+  "plugins": ["import", "jest"],
   "rules": {
     "import/no-unresolved": 2,
     "import/no-commonjs": 2,
