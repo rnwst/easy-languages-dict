@@ -40,7 +40,7 @@ export function parseResponse(response) {
     return response.translation;
   } else if (response.type === 'error') {
     console.log(response);
-    error = new Error(response.message);
+    const error = new Error(response.message);
     error.name = response.name;
     error.code = response.code;
     throw error;
