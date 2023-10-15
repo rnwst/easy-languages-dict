@@ -28,11 +28,12 @@ export function createTranslationBubble(overlayElt, translation) {
       'Tahoma, DejaVu Sans Condensed, sans-serif';
   // Look at that subtle off-white coloring!
   bubble.style.color = '#eee';
-  bubble.style.background = 'rgba(0, 0, 0, 0.5)';
   // The tasteful thickness of it!
   bubble.style.textShadow = '0.02em 0.04em 0.04em black';
   // Oh my god! It even has a blurred background!
-  bubble.style.backdropFilter = 'blur(0.3em)';
+  bubble.style.backdropFilter = 'blur(0.3em) brightness(55%)';
+  // Lighten background so that bubble shape is visible on black background.
+  bubble.style.background = 'rgb(255 255 255 / 10%)';
   // Prevent 'mouseenter' event from firing when entering the bubble -
   // otherwise, hovering over the bubble will make it disappear.
   bubble.style.pointerEvents = 'none';
