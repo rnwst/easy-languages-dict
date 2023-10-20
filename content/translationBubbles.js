@@ -133,13 +133,36 @@ export function createTranslationBubble(overlayElt, translation) {
 
   overlayElt.appendChild(bubble);
 
+  // When the video is in default view mode, in Chromium, the translation bubble
+  // is suffering from a rendering issue: the `mask-image` is not applied to the
+  // `backdrop-filter`. This is due to this Chromium bug:
+  // https://bugs.chromium.org/p/chromium/issues/detail?id=1229700.
+  // This is because in default view mode, the translation bubble has a
+  // relatively positioned ancestor ('#movie_player'). The bug can be avoided by
+  // positioning that ancestor statically instead.
+  const avoidChromiumBug1229700 = () => {
+    document.querySelector('#movie_player').style.position = 'static';
+    // The static positioning of the '#movie_player' element causes the
+    // '.ytp-gradient-bottom' element to exceed the bottom rounded corners of
+    // the '#ytd-player' element. To avoid this, we set bottom left and right
+    // border radii on the '.ytp-gradient-bottom' element.
+    const borderRadius =
+      getComputedStyle(document.querySelector('#ytd-player')).borderRadius;
+    const gradientElt = document.querySelector('.ytp-gradient-bottom');
+    gradientElt.style.borderBottomLeftRadius = borderRadius;
+    gradientElt.style.borderBottomRightRadius = borderRadius;
+  };
+  avoidChromiumBug1229700();
+
   // Element needs to be repositioned and resized when container is resized.
   // Above, the 'em' unit is used throughout to position, size, and style.
   // Therefore, we only need to recalculate the font size when the video is
-  // resized.
+  // resized (and avoid the Chromium bug, since a resizing of the video could
+  // mean a change to default view mode).
   new ResizeObserver((entries, observer) => {
     if (document.body.contains(overlayElt)) {
       bubble.style.fontSize = `${fontSize()}px`;
+      avoidChromiumBug1229700();
     } else {
       observer.disconnect();
     }
