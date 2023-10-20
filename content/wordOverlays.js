@@ -32,28 +32,25 @@ export function createWordOverlay(word) {
   // Position and size overlay.
   overlayElt.style.position = 'absolute';
   const video = document.querySelector('video');
-  const container = document.querySelector('#movie_player');
   const positionAndSizeOverlay = () => {
     // `videoWidth/Height` are in CSS pixels, whereas `video.videoWidth/Height`
     // are in 'video pixels'.
     // Position element.
-    const [videoWidth, videoHeight] = [video.offsetWidth, video.offsetHeight];
-    const containerWidth = container.offsetWidth;
-    const containerHeight = container.offsetHeight;
-    const blackBarWidth = (containerWidth - videoWidth) / 2;
-    const blackBarHeight = (containerHeight - videoHeight) / 2;
-    const left = (word.bbox.x0 / video.videoWidth) * videoWidth + blackBarWidth;
+    const blackBarWidth = video.offsetLeft;
+    const blackBarHeight = video.offsetTop;
+    const left =
+        (word.bbox.x0 / video.videoWidth) * video.offsetWidth + blackBarWidth;
     overlayElt.style.left = left + 'px';
     const top =
         (word.bbox.y0 / video.videoHeight + VERT_SUBTITLE_POS.start) *
-        videoHeight +
-        blackBarHeight;
+        video.offsetHeight + blackBarHeight;
     overlayElt.style.top = top + 'px';
     // Size element.
-    const width = (word.bbox.x1 - word.bbox.x0) / video.videoWidth * videoWidth;
+    const width =
+        (word.bbox.x1 - word.bbox.x0) / video.videoWidth * video.offsetWidth;
     overlayElt.style.width = width + 'px';
     const height =
-        (word.bbox.y1 - word.bbox.y0) / video.videoHeight * videoHeight;
+        (word.bbox.y1 - word.bbox.y0) / video.videoHeight * video.offsetHeight;
     overlayElt.style.height = height + 'px';
   };
   positionAndSizeOverlay();
