@@ -12,7 +12,7 @@ export function createTranslationBubble(overlayElt, translation) {
   bubble.classList.add('translation-bubble');
   // Position bubble.
   bubble.style.position = 'absolute';
-  bubble.style.bottom = '3em';
+  bubble.style.bottom = 'calc(100% + 1.3em)';
   bubble.style.left = '50%';
   bubble.style.transform = 'translateX(-50%)';
   // Fill bubble.
