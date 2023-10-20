@@ -18,8 +18,7 @@ export function createTranslationBubble(overlayElt, translation) {
   // Fill bubble.
   bubble.innerHTML = translation;
   bubble.style.maxWidth = '9em';
-  // This prevents line breaks from being inserted after every word, to avoid
-  // overflowing the parent element.
+  // This prevents line breaks from being inserted after every word.
   bubble.style.width = 'max-content';
   // Now style bubble.
   // The lettering used in the Easy Languages videos is something called
