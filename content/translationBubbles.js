@@ -46,8 +46,8 @@ export function createTranslationBubble(overlayElt, translation) {
   // Therefore, the translation bubble is 'cut out' of an initial blurred box,
   // the size of which is determined by padding and content size.
   // First, let's define some CSS custom properties:
-  document.documentElement.style.setProperty('--border-radius', '0.5em');
-  document.documentElement.style.setProperty('--handle-height', '0.33em');
+  bubble.style.setProperty('--border-radius', '0.5em');
+  bubble.style.setProperty('--handle-height', '0.33em');
   // Padding.
   const horizontalPadding =
       // 0.275em is the minimum expected content width (the letter 'I').
