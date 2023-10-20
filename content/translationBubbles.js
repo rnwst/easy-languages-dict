@@ -31,9 +31,9 @@ export function createTranslationBubble(overlayElt, translation) {
   // The tasteful thickness of it!
   bubble.style.textShadow = '0.02em 0.04em 0.04em black';
   // Oh my god! It even has a blurred background!
-  bubble.style.backdropFilter = 'blur(0.3em) brightness(55%)';
+  bubble.style.backdropFilter = 'blur(0.2em) brightness(43%)';
   // Lighten background so that bubble shape is visible on black background.
-  bubble.style.background = 'rgb(255 255 255 / 10%)';
+  bubble.style.background = 'rgb(255 255 255 / 12%)';
   // Prevent 'mouseenter' event from firing when entering the bubble -
   // otherwise, hovering over the bubble will make it disappear.
   bubble.style.pointerEvents = 'none';
