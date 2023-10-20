@@ -90,14 +90,23 @@ export function createTranslationBubble(overlayElt, translation) {
   // Speech bubble handle needs to be 'cut out' from bottom padding.
   bubble.style.paddingBottom = 'calc(0.28em + var(--handle-height))';
   const radialGradient =
-      // 2% blending, to prevent aliasing at the bubble's corners.
-      'radial-gradient(closest-side, black 98%, transparent 100%)';
+      // 1px of blending, to prevent aliasing at the bubble's corners. CSS
+      // gradients are not currently anti-aliased by Chromium. See
+      // https://bugs.chromium.org/p/chromium/issues/detail?id=408528.
+      'radial-gradient(' +
+        'closest-side, ' +
+        'black calc(100% - 0.5px), ' +
+        'transparent calc(100% + 0.5px)' +
+      ')';
   const linearGradient = 'linear-gradient(black, black)';
   bubble.style.webkitMaskImage =
       Array(4).fill(radialGradient).join(', ') + ', ' + // Corners.
       Array(2).fill(linearGradient).join(', ') + ', ' + // Content.
-      'conic-gradient(from -45deg at 50% 100%,' +
-      ' black 0deg 90deg, transparent 90deg 360deg)'; // Handle.
+      'conic-gradient(' +
+        'from -45deg at 50% 100%, ' +
+        'black 0deg 90deg, ' +
+        'transparent 90deg 360deg' +
+      ')'; // Handle.
   // Percentage values here work differently than length values: the X% point in
   // the gradient/image is aligned with the X% point in the container.
   bubble.style.webkitMaskPosition =
