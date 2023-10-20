@@ -85,7 +85,7 @@ export function createTranslationBubble(overlayElt, translation) {
       `${linearMaskDim} calc(100% - var(--handle-height)), ` + // Content.
       // Handle. Oversize slightly to prevent rendering issue of small gap
       // between bubble and handle.
-      'calc(2.1 * var(--handle-height) + 2px) calc(1.05 * var(--handle-height)';
+      'calc(2.1 * var(--handle-height)) calc(1.05 * var(--handle-height))';
   bubble.style.webkitMaskRepeat = 'no-repeat';
 
   // Above, the 'em' unit is used throughout to position, size, and style.
