@@ -10,17 +10,49 @@ export function createTranslationBubble(overlayElt, translation) {
   // Add 'translation-bubble' class so that the bubble can be removed easily
   // with a simple query selector.
   bubble.classList.add('translation-bubble');
+
+  const video = document.querySelector('video');
+
+  // This function is needed later if the bubble is resized.
+  const fontSize = () => {
+    // In CSS pixels rather than 'video pixels'. This is why we can't use
+    // `video.videoHeight`.
+    const videoHeight = video.offsetHeight;
+    // `0.05*videoHeight` is the size of the main text. The English translation
+    // below is around 22% smaller.
+    return 0.9*0.05*videoHeight;
+  };
+  bubble.style.fontSize = `${fontSize()}px`;
+
   // Position bubble.
   bubble.style.position = 'absolute';
   bubble.style.bottom = 'calc(100% + 1.3em)';
   bubble.style.left = '50%';
-  bubble.style.transform = 'translateX(-50%)';
+  const overlayEltMidpoint = overlayElt.offsetLeft + overlayElt.offsetWidth / 2;
+  const blackBarWidth = video.offsetLeft;
+  const distToLeftVideoEdgeInEM =
+      ((overlayEltMidpoint - blackBarWidth) / fontSize()).toPrecision(4);
+  const distToRightVideoEdgeInEM =
+      ((video.offsetWidth + blackBarWidth - overlayEltMidpoint) / fontSize())
+          .toPrecision(4);
+  const nearEdgeShift = (offset) => {
+    return 'calc(' +
+      // Translate to the right if bubble exceeds left video edge (with margin).
+      `max(0%,  50% - ${distToLeftVideoEdgeInEM }em + 0.4em + ${offset}) + ` +
+      // Translate to the left if bubble exceeds right video edge (with margin).
+      `min(0%, -50% + ${distToRightVideoEdgeInEM}em - 0.4em - ${offset})` +
+      ')';
+  };
+  bubble.style.transform =
+      `translateX(-50%) translateX(${nearEdgeShift('0px')})`;
+
   // Fill bubble.
   bubble.innerHTML = translation;
-  bubble.style.maxWidth = '9em';
+
+  // Style bubble.
   // This prevents line breaks from being inserted after every word.
   bubble.style.width = 'max-content';
-  // Now style bubble.
+  bubble.style.maxWidth = '9em';
   // The lettering used in the Easy Languages videos is something called
   // 'Tahoma' (for stylistic coherence, the same/a similar font is used).
   bubble.style.fontFamily =
@@ -71,11 +103,13 @@ export function createTranslationBubble(overlayElt, translation) {
   bubble.style.webkitMaskPosition =
       'left top, ' + // Top left corner.
       'right top, ' + // Top right corner.
-      'left 0px bottom var(--handle-height), '+ // Bottom left corner.
-      'right 0px bottom var(--handle-height), ' + // Bottom right corner.
+      'left 0 bottom var(--handle-height), '+ // Bottom left corner.
+      'right 0 bottom var(--handle-height), ' + // Bottom right corner.
       '0 var(--border-radius), ' + // Content.
       'var(--border-radius) 0, ' + // Content.
-      'center bottom'; // Handle.
+      // To center the handle in case of proximity to a video edge, it needs to
+      // be shifted by `var(--handle-height)`.
+      `calc(50% - ${nearEdgeShift('var(--handle-height)')}) 100%`; // Handle.
   const radialMaskDim = 'calc(2 * var(--border-radius))';
   const linearMaskDim = `calc(100% - ${radialMaskDim})`;
   bubble.style.webkitMaskSize =
@@ -88,25 +122,15 @@ export function createTranslationBubble(overlayElt, translation) {
       'calc(2.1 * var(--handle-height)) calc(1.05 * var(--handle-height))';
   bubble.style.webkitMaskRepeat = 'no-repeat';
 
-  // Above, the 'em' unit is used throughout to position, size, and style.
-  // Therefore, we only need to recalculate the font size when the video is
-  // resized.
-  const setFontSize = () => {
-    // In CSS pixels rather than 'video pixels'. This is why we can't use
-    // `video.videoHeight`.
-    const videoHeight = document.querySelector('video').offsetHeight;
-    // `0.05*videoHeight` is the size of the main text. The English translation
-    // below is around 22% smaller.
-    bubble.style.fontSize = `${0.9*0.05*videoHeight}px`;
-  };
-  setFontSize();
-
   overlayElt.appendChild(bubble);
 
   // Element needs to be repositioned and resized when container is resized.
+  // Above, the 'em' unit is used throughout to position, size, and style.
+  // Therefore, we only need to recalculate the font size when the video is
+  // resized.
   new ResizeObserver((entries, observer) => {
     if (document.body.contains(overlayElt)) {
-      setFontSize();
+      bubble.style.fontSize = `${fontSize()}px`;
     } else {
       observer.disconnect();
     }
