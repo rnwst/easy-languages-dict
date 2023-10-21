@@ -1,14 +1,14 @@
 'use strict';
 
 /**
- * Escape potential HTML in OCRed text.
+ * Escape potential HTML.
  * @param {string} text - OCRed text
  * @return {string} - Escaped text
  */
 export function escapeHTML(text) {
   const elt = document.createElement('span');
-  elt.innerText = text;
-  return elt.innerHTML;
+  elt.textContent = text;
+  return elt.textContent;
 }
 
 
@@ -116,11 +116,13 @@ async function translate(text, translationOptions) {
  */
 export default async function translateWord(
     sentence, wordIndex, translationOptions) {
-  const word = sentence[wordIndex];
+  const word = escapeHTML(sentence[wordIndex]);
   const wordWithContext = wrapWordInSpanTags(sentence, wordIndex);
   const outOfContextTranslationPromise =
     translate(word, translationOptions)
-        .then((translation) => removePunctuation(translation));
+        // To prevent XSS attacks if the server returns malicious content, we
+        // need to sanitize the response.
+        .then((translation) => escapeHTML(removePunctuation(translation)));
   const inContextTranslationPromise =
     translate(wordWithContext, translationOptions)
         .then((translation) => {
@@ -132,7 +134,9 @@ export default async function translateWord(
           if (!translatedWord || (translatedWord === '')) {
             return '-';
           } else {
-            return translatedWord;
+            // To prevent XSS attacks if the server returns malicious content,
+            // we need to sanitize the response.
+            return escapeHTML(translatedWord);
           }
         });
   const outOfContextTranslation = await outOfContextTranslationPromise;
