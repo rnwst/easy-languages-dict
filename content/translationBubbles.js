@@ -3,9 +3,9 @@
 /**
  * Create translation bubble.
  * @param {object} overlayElt - Overlay element above which to show the bubble
- * @param {string} translation - Translation to be shown in the bubble
+ * @return {object} - Translation bubble
  */
-export function createTranslationBubble(overlayElt, translation) {
+export function createTranslationBubble(overlayElt) {
   const bubble = document.createElement('div');
   // Add 'translation-bubble' class so that the bubble can be removed easily
   // with a simple query selector.
@@ -47,7 +47,7 @@ export function createTranslationBubble(overlayElt, translation) {
       `translateX(-50%) translateX(${nearEdgeShift('0px')})`;
 
   // Fill bubble.
-  bubble.innerHTML = translation;
+  bubble.textContent = 'loading translation...';
 
   // Style bubble.
   // This prevents line breaks from being inserted after every word.
@@ -167,6 +167,8 @@ export function createTranslationBubble(overlayElt, translation) {
       observer.disconnect();
     }
   }).observe(overlayElt);
+
+  return bubble;
 }
 
 

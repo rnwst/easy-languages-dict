@@ -75,15 +75,16 @@ async function main() {
           const wordOverlay = createWordOverlay(word);
           wordOverlay.addEventListener('mouseenter', () => {
             removeTranslationBubbles();
+            const bubble = createTranslationBubble(wordOverlay);
             const sentence = words.map((word) => word.text);
             const langCode = langData[lang].bing;
             const translationPromise =
                 translateWord(sentence, wordIndex, {from: langCode, to: 'en'});
             translationPromise
                 .then((translation) => {
-                  createTranslationBubble(wordOverlay, translation);
+                  bubble.innerHTML = translation;
                 }).catch((error) => {
-                  createTranslationBubble(wordOverlay, error.message);
+                  bubble.textContent = error.message;
                 });
           });
         }
