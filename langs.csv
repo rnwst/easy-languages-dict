@@ -1,4 +1,4 @@
-lang,channel,tested,tesseract,google,bing,defaultEngine
+name,channelHandle,tested,tesseractCode,googleCode,bingCode,defaultTranslator
 afrikaans,-,false,afr,af,af,bing
 arabic,EasyArabicVideos,false,ara,ar,ar,bing
 armenian,-,false,hye,hy,hy,bing

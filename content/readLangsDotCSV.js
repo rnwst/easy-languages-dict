@@ -16,18 +16,16 @@ I've decided on the 'web-accessible-resources' method.
  * arbitrary CSV file (it cannot handle quoted values, carriage return line
  * endings, ...) but it does a good enough job for `langs.csv`.
  * @param {string} csvStr - CSV file contents
- * @return {array} - Array of row objects
+ * @return {array} - Array of objects whose keys are equal to the table headers
  */
 export function parseCSV(csvStr) {
   const lines = csvStr.split('\n');
-  const header = lines[0].split(',');
+  const headers = lines[0].split(',');
   const data = lines.slice(1, -1).map((rowStr) => rowStr.split(','));
-  const table = {};
-  for (const row of data) {
-    const keyValPairs = row.slice(1).map((val, idx) => [header[++idx], val]);
-    table[row[0]] = Object.fromEntries(keyValPairs);
-  }
-  return table;
+  return data.map((row) => {
+    const keyValPairs = row.map((val, idx) => [headers[idx], val]);
+    return Object.fromEntries(keyValPairs);
+  });
 }
 
 
@@ -35,7 +33,7 @@ export function parseCSV(csvStr) {
  * Return information about supported languages and their respective codes.
  * @return {object} - Table row array containing objects with table header keys
  */
-export default async function getLangData() {
+export default async function readLangsDotCSV() {
   const url = chrome.runtime.getURL('langs.csv');
   const csvStr = await fetch(url).then((stream) => stream.text());
   return parseCSV(csvStr);

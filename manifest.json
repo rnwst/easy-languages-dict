@@ -7,7 +7,7 @@
 
   "content_scripts": [
     {
-      "matches": ["https://www.youtube.com/*"],
+      "matches": ["https://www.youtube.com/*", "https://m.youtube.com/*"],
       "js": ["./content/index.js"]
     }
   ],
@@ -17,6 +17,10 @@
     "service_worker": "background/index.js"
   },
 
+  "permissions": [
+    "webNavigation"
+  ],
+
   "host_permissions": [
     "https://translate.google.com/",
     "https://www.bing.com/"
@@ -25,7 +29,7 @@
   "web_accessible_resources": [
     {
       "resources": ["langs.csv"],
-      "matches": ["https://www.youtube.com/*"]
+      "matches": ["https://www.youtube.com/*", "https://m.youtube.com/*"]
     }
   ]
 }

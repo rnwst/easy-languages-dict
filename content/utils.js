@@ -1,6 +1,5 @@
 'use strict';
 
-import getLangData from '../utils/getLangData.js';
 import {rewind, fastfwd} from './seek.js';
 
 
@@ -20,54 +19,22 @@ export function timeout(timeInMS) {
 
 
 /**
- * Check if current page is a YT video belonging to the Easy Languages channels.
- * @return {boolean} - Whether current page is an Easy Languages video
+ * Determine whether YouTube page is the mobile or desktop version.
+ * @return {boolean} - Whether YT page is mobile version
  */
-export async function isEasyLanguagesVideo() {
-  // First check if current URL corresponds to a YT video. Since this function
-  // is only executed once the 'yt-page-data-updated' event is dispatched, the
-  // correct channel element is already present in the DOM. YT channel names are
-  // not unique. Therefore, we need to retrieve the channel URL to make sure the
-  // extension doesn't run on a video uploaded by a channel which happens to be
-  // named  'Easy {insert language here}' but is unaffiliated with the Easy
-  // Languages franchise.
-  if (!document.URL.match(/^https:\/\/www\.youtube\.com\/watch\?v=.*/)) {
-    return false;
-  }
-  // Even though the channelElt should already be loaded, there was an instance
-  // where `querySelector` returned `undefined`.
-  // TBD: Use `MutationObserver` in case `channelElt` is unavailable.
-  const channel = document.querySelector('#above-the-fold .ytd-channel-name a')
-      .getAttribute('href').match(/^\/@(?<name>.*)$/).groups.name;
-  return (Object.entries(await getLangData())
-      .map(([lang, data]) => data.channel).includes(channel) ||
-      channel === 'easylanguages'
-  );
+export function isMobile() {
+  return new URL(document.URL).host.startsWith('m');
 }
 
 
 /**
- * Determine language of easy languages video. Assumes that the current video
- * is an Easy Languages video.
- * @return {string} - Language of current video
+ * Extract YouTube Video Id from video URL. Example: The video Id of
+ * 'https://www.youtube.com/watch?v=x5yPyrpeWjo' is 'x5yPyrpeWjo'.
+ * @param {string} videoURL - Video URL
+ * @return {string} - Video Id
  */
-export function getLang() {
-  const videoTitle = document.querySelector(
-      '#above-the-fold > #title yt-formatted-string').textContent;
-  return videoTitle
-      .match(/Easy (?:\w+? )?(?<lang>\w+) \d+/)?.groups.lang.toLowerCase();
-}
-
-
-/**
- * Find out whether Easy Languages video language is supported by Easy Languages
- * Dictionary.
- * @return {boolean} - Whether language is supported
- */
-export async function langSupported() {
-  const lang = getLang();
-  const tesseract = (await getLangData())[lang]?.tesseract;
-  return (Boolean(tesseract) && (tesseract != '-'));
+export function extractVideoId(videoURL) {
+  return new URL(videoURL).searchParams.get('v');
 }
 
 

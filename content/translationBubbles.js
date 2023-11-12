@@ -1,17 +1,19 @@
 'use strict';
 
+import {isMobile} from './utils.js';
+
+
 /**
  * Create translation bubble.
+ * @param {object} video - YT video element
  * @param {object} overlayElt - Overlay element above which to show the bubble
  * @return {object} - Translation bubble
  */
-export function createTranslationBubble(overlayElt) {
+export function createTranslationBubble(video, overlayElt) {
   const bubble = document.createElement('div');
   // Add 'translation-bubble' class so that the bubble can be removed easily
   // with a simple query selector.
   bubble.classList.add('translation-bubble');
-
-  const video = document.querySelector('video');
 
   // This function is needed later if the bubble is resized.
   const fontSize = () => {
@@ -140,6 +142,7 @@ export function createTranslationBubble(overlayElt) {
   // relatively positioned ancestor ('#movie_player'). The bug can be avoided by
   // positioning that ancestor statically instead.
   const avoidChromiumBug1229700 = () => {
+    if (isMobile()) return;
     document.querySelector('#movie_player').style.position = 'static';
     // The static positioning of the '#movie_player' element causes the
     // '.ytp-gradient-bottom' element to exceed the bottom rounded corners of

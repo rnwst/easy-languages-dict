@@ -2,12 +2,33 @@
 
 import * as fs from 'fs';
 
+import {parseCSV} from '../content/readLangsDotCSV.js';
 import {removePunctuation} from '../content/translateWord.js';
-import {getLang, langSupported} from '../content/utils.js';
 
 
-describe('utils', () => {
-  describe('getLang', () => {
+describe('getLang', () => {
+  global.chrome = {
+    runtime: {
+      getURL: () => '',
+    },
+  };
+
+  global.fetch = () => Promise.resolve({
+    text: () => fs.readFileSync('langs.csv').toString(),
+  });
+
+  jest.mock('../content/getVideoMetadata.js', () => {
+    return Promise.resolve({
+      channelHandle: '',
+      title: '',
+    });
+  });
+
+  // Need to import function using `require` after `getVideoMetadata` has been
+  // mocked, as it is executed on import.
+  const {extractLangFromTitle} = require('../content/getLang.js');
+
+  describe('extractLangFromTitle', () => {
     it('extracts language from video title', () => {
       const channelTitleLanguagePairs = [
         ['Easy Japanese 19 - Slang words', 'japanese'],
@@ -15,46 +36,35 @@ describe('utils', () => {
         ['Christmas in Taiwan | Easy Taiwanese Mandarin 15', 'mandarin'],
       ];
       channelTitleLanguagePairs.forEach((pair) => {
-        jest.spyOn(document, 'querySelector').mockImplementation(() => {
-          return {textContent: pair[0]};
-        });
-        expect(getLang()).toEqual(pair[1]);
+        expect(extractLangFromTitle(pair[0])).toEqual(pair[1]);
         jest.restoreAllMocks();
       });
     });
   });
+});
 
-  describe('langSupported', () => {
-    global.chrome = {
-      runtime: {
-        getURL: () => '',
-      },
-    };
-    global.fetch = () => Promise.resolve({
-      text: () => fs.readFileSync('langs.csv').toString(),
-    });
 
-    it('says Polish is supported', async () => {
-      jest.spyOn(document, 'querySelector').mockImplementation(() => {
-        return {textContent: 'Easy Polish 1'};
-      });
-      expect(await langSupported()).toEqual(true);
+describe('readLangsDotCSV', () => {
+  describe('parseCSV', () => {
+    it('parses CSV', () => {
+      const csv =
+        'name,iso,defaultEngine\n' +
+        'sindarin,sjn,elvishTranslator\n' +
+        'quenya,qya,elvishTranslator\n';
+      const parsed = [
+        {
+          name: 'sindarin',
+          iso: 'sjn',
+          defaultEngine: 'elvishTranslator',
+        },
+        {
+          name: 'quenya',
+          iso: 'qya',
+          defaultEngine: 'elvishTranslator',
+        },
+      ];
+      expect(parseCSV(csv)).toEqual(parsed);
     });
-    // A language which appears in `langs.csv`.
-    it('says Oshiwambo isn\'t supported', async () => {
-      jest.spyOn(document, 'querySelector').mockImplementation(() => {
-        return {textContent: 'Easy Oshiwambo 1'};
-      });
-      expect(await langSupported()).toEqual(false);
-    });
-    // A language which doesn't appear in `langs.csv`.
-    it('says Sindarin isn\'t supported', async () => {
-      jest.spyOn(document, 'querySelector').mockImplementation(() => {
-        return {textContent: 'Easy Sindarin 1'};
-      });
-      expect(await langSupported()).toEqual(false);
-    });
-    jest.restoreAllMocks();
   });
 });
 

@@ -34,7 +34,7 @@ All languages available on the Easy Languages channels should be supported by Ea
 
 ## Known issues
 
-- Currently, in videos that mix languages (such as [this one](https://www.youtube.com/watch?v=ySJa8swxrJc)), only the first language appearing in the video title works.
+- In videos that mix languages (such as [this one](https://www.youtube.com/watch?v=ySJa8swxrJc)), only the language corresponding to the uploading channel works. If the video was uploaded by the [Easy Languages channel](https://www.youtube.com/@easylanguages), only the first language appearing in the video title works.
 - Most languages are untested so far.
 
 ## License

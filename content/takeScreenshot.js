@@ -1,16 +1,16 @@
 'use strict';
 
-import {VERT_SUBTITLE_POS} from './config.js';
+import {VERT_SUBTITLE_POS} from './constants.js';
 
 
 /**
  * Take screenshot of the portion of the video element containing the text to be
  * OCRed.
+ * @param {object} video - Video to screenshot
  * @param {boolean} downloadScreenshot - Download screenshot for debugging?
  * @return {string} - Data URI in base64 format
  */
-export default function takeScreenshot(downloadScreenshot=false) {
-  const video = document.querySelector('video');
+export default function takeScreenshot(video, downloadScreenshot=false) {
   const canvas = document.createElement('canvas');
   const canvasContext = canvas.getContext('2d');
   // `Canvas.height` and `.width` are in CSS pixels, whereas `video.videoHeight`
