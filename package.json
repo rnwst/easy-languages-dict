@@ -14,7 +14,7 @@
   "author": "R. N. West",
   "license": "GPL-2.0-or-later",
   "dependencies": {
-    "tesseract.js": "^4.0.6"
+    "tesseract.js": "^5.0.3"
   },
   "devDependencies": {
     "@babel/plugin-transform-modules-commonjs": "^7.22.11",

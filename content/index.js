@@ -28,10 +28,7 @@ async function main(videoId) {
   addRewindFastfwdListener();
 
   const {createWorker} = require('tesseract.js');
-
-  const worker = await createWorker();
-  await worker.loadLanguage(lang.tesseractCode);
-  await worker.initialize(lang.tesseractCode);
+  const worker = await createWorker(lang.tesseractCode);
 
   /**
    * Variable to store text to prevent unnecessary recreation of translation
