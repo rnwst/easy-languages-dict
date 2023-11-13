@@ -54,7 +54,7 @@ export function createTranslationBubble(video, overlayElt) {
   // Style bubble.
   // This prevents line breaks from being inserted after every word.
   bubble.style.width = 'max-content';
-  bubble.style.maxWidth = '9em';
+  bubble.style.maxWidth = '20em';
   // The lettering used in the Easy Languages videos is something called
   // 'Tahoma' (for stylistic coherence, the same/a similar font is used).
   bubble.style.fontFamily =
