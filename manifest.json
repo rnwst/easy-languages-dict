@@ -8,7 +8,8 @@
   "content_scripts": [
     {
       "matches": ["https://www.youtube.com/*", "https://m.youtube.com/*"],
-      "js": ["./content/index.js"]
+      "js": ["./content/index.js"],
+      "run_at": "document_end"
     }
   ],
 
