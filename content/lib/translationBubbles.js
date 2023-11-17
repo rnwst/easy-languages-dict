@@ -1,15 +1,15 @@
 'use strict';
 
-import {isMobile} from './utils.js';
+import {isMobile, getVideo} from './utils.js';
 
 
 /**
  * Create translation bubble.
- * @param {object} video - YT video element
  * @param {object} overlayElt - Overlay element above which to show the bubble
  * @return {object} - Translation bubble
  */
-export function createTranslationBubble(video, overlayElt) {
+export function createTranslationBubble(overlayElt) {
+  const video = getVideo();
   const bubble = document.createElement('div');
   // Add 'translation-bubble' class so that the bubble can be removed easily
   // with a simple query selector.

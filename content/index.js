@@ -1,8 +1,9 @@
 'use strict';
 
 import {
-  extractVideoId,
   timeout,
+  extractVideoId,
+  getVideo,
   addRewindFastfwdListener,
   removeRewindFastfwdListener,
 } from './lib/utils.js';
@@ -38,7 +39,7 @@ async function main(videoId) {
   let previouslyOCRedText = '';
 
   while (extractVideoId(document.URL) === videoId) {
-    const video = document.querySelector('video');
+    const video = getVideo();
     // Conditional chaining is needed since on occasion the video will not yet
     // be present in the DOM when the page is freshly loaded.
     if (!video?.playing) {
@@ -66,10 +67,10 @@ async function main(videoId) {
         // Only translate words which aren't numbers or dashes.
         const isNumeric = (str) => !isNaN(str);
         if (!isNumeric(word.text) && word.text != '-') {
-          const wordOverlay = createWordOverlay(video, word);
+          const wordOverlay = createWordOverlay(word);
           wordOverlay.addEventListener('mouseenter', () => {
             removeTranslationBubbles();
-            const bubble = createTranslationBubble(video, wordOverlay);
+            const bubble = createTranslationBubble(wordOverlay);
             const sentence = words.map((word) => word.text);
             const translationPromise = translateWord(
                 sentence,

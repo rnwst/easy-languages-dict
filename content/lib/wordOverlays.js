@@ -1,5 +1,6 @@
 'use strict';
 
+import {getVideo} from './utils.js';
 import {VERT_SUBTITLE_POS} from './constants.js';
 
 
@@ -7,11 +8,11 @@ import {VERT_SUBTITLE_POS} from './constants.js';
  * Create transparent overlay over OCRed word. This element is needed to attach
  * a 'mouseenter' event listener to, so that a translation bubble can be shown
  * above it.
- * @param {object} video - YT video element
  * @param {object} word - OCRed word
  * @return {object} - Word element
  */
-export function createWordOverlay(video, word) {
+export function createWordOverlay(word) {
+  const video = getVideo();
   const overlayElt = document.createElement('div');
   // `overlayElt` will become a child of the video container, not the video.
   // This is because video elements can have no children. Unfortunately, this

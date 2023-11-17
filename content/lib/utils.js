@@ -39,6 +39,17 @@ export function extractVideoId(videoURL) {
 
 
 /**
+ * Get YT video element. This function's primary purpose is to avoid duplication
+ * of the relevant query selector whenever the video element is needed.
+ * @return {object} - YT video element
+ */
+export function getVideo() {
+  const querySelector = isMobile() ? 'video' : 'ytd-watch-flexy video';
+  return document.querySelector(querySelector);
+}
+
+
+/**
  * Event handler for 'keydown' event. Intercept arrow keys and rewind or
  * fast-forward the video by 2 seconds instead of the default 5.
  * @param {object} event - Keydown event
