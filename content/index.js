@@ -10,9 +10,9 @@ import {
 import getLang from './lib/getLang.js';
 import {REST_TIME} from './lib/constants.js';
 import takeScreenshot from './lib/takeScreenshot.js';
-import {createWordOverlay, removeWordOverlays} from './lib/wordOverlays.js';
+import {createWordOverlay, removeWordOverlays} from './lib/word-overlays.js';
 import {createTranslationBubble, removeTranslationBubbles}
-  from './lib/translationBubbles.js';
+  from './lib/translation-bubbles.js';
 import translateWord from './lib/translateWord.js';
 
 
