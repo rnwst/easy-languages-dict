@@ -5,14 +5,14 @@ import {
   timeout,
   addRewindFastfwdListener,
   removeRewindFastfwdListener,
-} from './utils.js';
-import getLang from './getLang.js';
-import {REST_TIME} from './constants.js';
-import takeScreenshot from './takeScreenshot.js';
-import {createWordOverlay, removeWordOverlays} from './wordOverlays.js';
+} from './lib/utils.js';
+import getLang from './lib/getLang.js';
+import {REST_TIME} from './lib/constants.js';
+import takeScreenshot from './lib/takeScreenshot.js';
+import {createWordOverlay, removeWordOverlays} from './lib/wordOverlays.js';
 import {createTranslationBubble, removeTranslationBubbles}
-  from './translationBubbles.js';
-import translateWord from './translateWord.js';
+  from './lib/translationBubbles.js';
+import translateWord from './lib/translateWord.js';
 
 
 /**

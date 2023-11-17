@@ -2,8 +2,8 @@
 
 import * as fs from 'fs';
 
-import {parseCSV} from '../content/readLangsDotCSV.js';
-import {removePunctuation} from '../content/translateWord.js';
+import {parseCSV} from '../content/lib/readLangsDotCSV.js';
+import {removePunctuation} from '../content/lib/translateWord.js';
 
 
 describe('getLang', () => {
@@ -17,7 +17,7 @@ describe('getLang', () => {
     text: () => fs.readFileSync('langs.csv').toString(),
   });
 
-  jest.mock('../content/getVideoMetadata.js', () => {
+  jest.mock('../content/lib/getVideoMetadata.js', () => {
     return Promise.resolve({
       channelHandle: '',
       title: '',
@@ -26,7 +26,7 @@ describe('getLang', () => {
 
   // Need to import function using `require` after `getVideoMetadata` has been
   // mocked, as it is executed on import.
-  const {extractLangFromTitle} = require('../content/getLang.js');
+  const {extractLangFromTitle} = require('../content/lib/getLang.js');
 
   describe('extractLangFromTitle', () => {
     it('extracts language from video title', () => {
