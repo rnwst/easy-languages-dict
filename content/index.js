@@ -8,6 +8,7 @@ import {
   removeRewindFastfwdListener,
 } from './lib/utils.js';
 import getLang from './lib/getLang.js';
+import './lib/HTMLMediaElement.playing.js';
 import {REST_TIME} from './lib/constants.js';
 import takeScreenshot from './lib/takeScreenshot.js';
 import {createWordOverlay, removeWordOverlays} from './lib/word-overlays.js';
