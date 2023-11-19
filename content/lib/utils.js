@@ -39,13 +39,38 @@ export function extractVideoId(videoURL) {
 
 
 /**
+ * Wait for DOM element to exist, and return the element as soon as it exists.
+ * This function is not declared asynchronous because we need the `resolve`
+ * function in the callback of the `MutationObserver`.
+ * @param {string} selector - DOM node selector
+ * @return {object} - Promise resolving to element
+ */
+export function waitForElt(selector) {
+  return new Promise((resolve) => {
+    const elt = document.querySelector(selector);
+    if (elt) return resolve(elt);
+
+    const observer = new MutationObserver((mutations) => {
+      const elt = document.querySelector(selector);
+      if (elt) {
+        observer.disconnect();
+        resolve(elt);
+      }
+    });
+
+    observer.observe(document.body, {childList: true, subtree: true});
+  });
+}
+
+
+/**
  * Get YT video element. This function's primary purpose is to avoid duplication
  * of the relevant query selector whenever the video element is needed.
  * @return {object} - YT video element
  */
 export function getVideo() {
-  const querySelector = isMobile() ? 'video' : 'ytd-watch-flexy video';
-  return document.querySelector(querySelector);
+  const selector = isMobile() ? 'video' : 'ytd-watch-flexy video';
+  return waitForElt(selector);
 }
 
 

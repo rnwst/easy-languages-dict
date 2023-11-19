@@ -1,6 +1,6 @@
 'use strict';
 
-import {timeout} from './utils.js';
+import {timeout, getVideo} from './utils.js';
 
 
 /**
@@ -46,7 +46,7 @@ async function showSeekUI(side) {
  * language learning.
  */
 export async function rewind() {
-  const video = document.querySelector('video');
+  const video = await getVideo();
   video.currentTime -= 2;
   showSeekUI('back');
 }
@@ -57,7 +57,7 @@ export async function rewind() {
  * for language learning.
  */
 export async function fastfwd() {
-  const video = document.querySelector('video');
+  const video = await getVideo();
   video.currentTime += 2;
   showSeekUI('forward');
 }

@@ -11,8 +11,8 @@ import {VERT_SUBTITLE_POS} from './constants.js';
  * @param {object} word - OCRed word
  * @return {object} - Word element
  */
-export function createWordOverlay(word) {
-  const video = getVideo();
+export async function createWordOverlay(word) {
+  const video = await getVideo();
   const overlayElt = document.createElement('div');
   // `overlayElt` will become a child of the video container, not the video.
   // This is because video elements can have no children. Unfortunately, this

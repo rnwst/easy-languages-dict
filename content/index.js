@@ -40,10 +40,8 @@ async function main(videoId) {
   let previouslyOCRedText = '';
 
   while (extractVideoId(document.URL) === videoId) {
-    const video = getVideo();
-    // Conditional chaining is needed since on occasion the video will not yet
-    // be present in the DOM when the page is freshly loaded.
-    if (!video?.playing) {
+    const video = await getVideo();
+    if (!video.playing) {
       await timeout(REST_TIME);
     } else {
       const {data} = await worker.recognize(takeScreenshot(video));
@@ -64,14 +62,14 @@ async function main(videoId) {
       const words = data.words;
 
       // Loop through each OCRed word.
-      words.forEach((word, wordIndex) => {
+      words.forEach(async (word, wordIndex) => {
         // Only translate words which aren't numbers or dashes.
         const isNumeric = (str) => !isNaN(str);
         if (!isNumeric(word.text) && word.text != '-') {
-          const wordOverlay = createWordOverlay(word);
-          wordOverlay.addEventListener('mouseenter', () => {
+          const wordOverlay = await createWordOverlay(word);
+          wordOverlay.addEventListener('mouseenter', async () => {
             removeTranslationBubbles();
-            const bubble = createTranslationBubble(wordOverlay);
+            const bubble = await createTranslationBubble(wordOverlay);
             const sentence = words.map((word) => word.text);
             const translationPromise = translateWord(
                 sentence,
