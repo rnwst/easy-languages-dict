@@ -2,7 +2,7 @@
 
 import {KNOWN_INNERTUBE_API_KEY, KNOWN_WEB_CLIENT_VERSION}
   from './constants.js';
-import {isMobile} from './utils.js';
+import {onMobile} from './utils.js';
 
 
 /**
@@ -86,7 +86,7 @@ const WEB_CLIENT_VERSION = getWebClientVersion();
 export function fetchMetadata(videoId) {
   // need to retry in case of poor connection...
   return fetch(
-      `https://${isMobile() ? 'm' : 'www'}.youtube.com/youtubei/v1/player?` +
+      `https://${onMobile() ? 'm' : 'www'}.youtube.com/youtubei/v1/player?` +
       `key=${INNERTUBE_API_KEY}`,
       {
         method: 'POST',

@@ -19,11 +19,20 @@ export function timeout(timeInMS) {
 
 
 /**
- * Determine whether YouTube page is the mobile or desktop version.
+ * Determine whether YouTube page is the mobile version.
  * @return {boolean} - Whether YT page is mobile version
  */
-export function isMobile() {
+export function onMobile() {
   return new URL(document.URL).host.startsWith('m');
+}
+
+
+/**
+ * Determine whether YouTube page is the desktop version.
+ * @return {boolean} - Whether YT page is desktop version
+ */
+export function onDesktop() {
+  return !onMobile();
 }
 
 
@@ -50,15 +59,13 @@ export function waitForElt(selector) {
     const elt = document.querySelector(selector);
     if (elt) return resolve(elt);
 
-    const observer = new MutationObserver((mutations) => {
+    new MutationObserver((mutations, observer) => {
       const elt = document.querySelector(selector);
       if (elt) {
         observer.disconnect();
         resolve(elt);
       }
-    });
-
-    observer.observe(document.body, {childList: true, subtree: true});
+    }).observe(document.body, {childList: true, subtree: true});
   });
 }
 
@@ -69,8 +76,42 @@ export function waitForElt(selector) {
  * @return {object} - YT video element
  */
 export function getVideo() {
-  const selector = isMobile() ? 'video' : 'ytd-watch-flexy video';
-  return waitForElt(selector);
+  return waitForElt(onMobile() ? 'video' : '#movie_player video');
+}
+
+
+/**
+ * Get movie player element.
+ * @return {object} - Movie player element
+ */
+export function getMoviePlayer() {
+  return waitForElt('#movie_player');
+}
+
+
+/**
+ * Create DOM element. All elements created by Easy Languages Dictionary are
+ * assigned the class 'easy-languages-dict'. This makes it easier to distinguish
+ * them from native YouTube page elements and makes inadvertent interference
+ * with the YT page less likely.
+ * @return {object} - Easy Languages Dict element
+ */
+export function createElement() {
+  const element = document.createElement('div');
+  element.classList.add('easy-languages-dict');
+  return element;
+}
+
+
+/**
+ * Return all DOM elements created by Easy Languages Dictionary to match the
+ * specified query selector.
+ * @param {string} selector - Query selector
+ * @return {array} - Array of matching elements
+ */
+export function easyLangsDictElts(selector) {
+  const elements = document.getElementsByClassName('easy-languages-dict');
+  return [].filter.call(elements, (elt) => elt.matches(selector));
 }
 
 
@@ -97,8 +138,8 @@ function keyEventHandler(event) {
 
 
 /**
- * Add keydown event listener to intercept arrow keys and rewind or fast-forward
- * the video by 2 seconds instead of the default 5.
+ * Add 'keydown' event listener to intercept arrow keys and rewind or
+ * fast-forward the video by 2 seconds instead of the default 5.
  */
 export function addRewindFastfwdListener() {
   // Call 'keydown' event handler during capturing phase, on the `document`
@@ -111,11 +152,82 @@ export function addRewindFastfwdListener() {
 
 
 /**
- * Remove keydown event listener. When navigating from an Easy Languages video
+ * Remove 'keydown' event listener. When navigating from an Easy Languages video
  * to a video which is not an Easy Languages video, arrow key presses should
  * result in the video being rewound/fast-forwarded by the default 5 seconds.
  * This necessitates the removal of the event listener.
  */
 export function removeRewindFastfwdListener() {
   document.removeEventListener('keydown', keyEventHandler, {capture: true});
+}
+
+
+/**
+ * On the mobile YT page, this function prevents the pointer-enterable
+ * container's children from being on top of the video controls when they are
+ * active.
+ * @param {object} pointerEnterableContainer - Pointer-enterable container
+ */
+export async function
+hideBehindActivePlayerControls(pointerEnterableContainer) {
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach(async (mutation) => {
+      // Since the pointer-enterable container was inserted before the player
+      // controls element, resetting its z-index to 'auto' puts it behind the
+      // player controls.
+      if (mutation.target.getAttribute('id') === 'player-control-overlay') {
+        pointerEnterableContainer.style.zIndex =
+            mutation.target.classList.contains('fadein') ? 'auto' : '11';
+      }
+    });
+  });
+  // We observe the top-level node instead of the player-control-overlay
+  // element, which gets removed from the DOM when changing videos. This ensures
+  // that the mutation observer is not removed along with the element it
+  // observes if it is attached too early when changing videos.
+  observer.observe(await waitForElt('#player-control-container'),
+      {attributes: true, subtree: true, attributeFilter: ['class']});
+
+  // When the pointer-enterable container is removed from the DOM, the
+  // MutationObserver is still going to have a reference to it. To allow the
+  // element to be garbage collected, we need to disconnect the observer. To
+  // this end, we may redefine the `.remove()` function to first disconnect the
+  // observer.
+  const oldRemove =
+      pointerEnterableContainer.remove.bind(pointerEnterableContainer);
+  pointerEnterableContainer.remove = () => {
+    observer.disconnect();
+    oldRemove();
+  };
+}
+
+
+/**
+ * Whether or not a word is translatable. Numbers and dashes can't be
+ * translated.
+ * @param {string} wordText - Word text
+ * @return {boolean} - Whether word can be translated
+ */
+export function isTranslatable(wordText) {
+  const isNumeric = (str) => !isNaN(str);
+  return !isNumeric(wordText) && wordText != '-';
+}
+
+
+/**
+ * Get dimensions of Data URL image.
+ * @param {string} dataURL - Data URL
+ * @return {object} - Once resolved, object with width and height properties
+ */
+export function getImageDimensions(dataURL) {
+  const image = new Image();
+  image.src = dataURL;
+  return new Promise((resolve) => {
+    image.onload = () => {
+      resolve({
+        width: image.naturalWidth,
+        height: image.naturalHeight,
+      });
+    };
+  });
 }

@@ -1,48 +1,46 @@
 'use strict';
 
-import {isMobile, getVideo} from './utils.js';
+import {
+  createElement,
+  easyLangsDictElts,
+} from './utils.js';
 
 
 /**
  * Create translation bubble.
- * @param {object} overlayElt - Overlay element above which to show the bubble
+ * @param {object} word - Word for which to create translation bubble
+ * @param {object} screenshotDims - Dimensions of OCRed screenshot
  * @return {object} - Translation bubble
  */
-export async function createTranslationBubble(overlayElt) {
-  const video = await getVideo();
-  const bubble = document.createElement('div');
-  // Add 'translation-bubble' class so that the bubble can be removed easily
-  // with a simple query selector.
+export function createTranslationBubble(word, screenshotDims) {
+  const bubble = createElement();
   bubble.classList.add('translation-bubble');
 
-  // This function is needed later if the bubble is resized.
-  const fontSize = () => {
-    // In CSS pixels rather than 'video pixels'. This is why we can't use
-    // `video.videoHeight`.
-    const videoHeight = video.offsetHeight;
-    // `0.05*videoHeight` is the size of the main text. The English translation
-    // below is around 22% smaller.
-    return 0.9*0.05*videoHeight;
-  };
-  bubble.style.fontSize = `${fontSize()}px`;
+  const bubbleContainer = easyLangsDictElts('.translation-bubble-container')[0];
+
+  // Set font size.
+  const fontSizeFraction = 0.9; // Relative to the video subtitles.
+  bubble.style.fontSize = `${fontSizeFraction}em`;
 
   // Position bubble.
   bubble.style.position = 'absolute';
-  bubble.style.bottom = 'calc(100% + 1.3em)';
-  bubble.style.left = '50%';
-  const overlayEltMidpoint = overlayElt.offsetLeft + overlayElt.offsetWidth / 2;
-  const blackBarWidth = video.offsetLeft;
-  const distToLeftVideoEdgeInEM =
-      ((overlayEltMidpoint - blackBarWidth) / fontSize()).toPrecision(4);
-  const distToRightVideoEdgeInEM =
-      ((video.offsetWidth + blackBarWidth - overlayEltMidpoint) / fontSize())
-          .toPrecision(4);
+  bubble.style.bottom = 'calc(100% + 0.8em)';
+  const distToLeftVideoEdgeInPc =
+      100 * 0.5 * (word.bbox.x0 + word.bbox.x1) / screenshotDims.width;
+  bubble.style.left = `${distToLeftVideoEdgeInPc}%`;
+  const containerPxPerEm = parseFloat(
+      getComputedStyle(bubbleContainer).getPropertyValue('font-size'),
+  );
+  const containerPxPerPc = 0.01 * bubbleContainer.offsetWidth;
+  const emPerPc = containerPxPerPc / containerPxPerEm / fontSizeFraction;
+  const distToLeftVideoEdgeInEm = distToLeftVideoEdgeInPc * emPerPc;
+  const distToRightVideoEdgeInEm = (100 - distToLeftVideoEdgeInPc) * emPerPc;
   const nearEdgeShift = (offset) => {
     return 'calc(' +
       // Translate to the right if bubble exceeds left video edge (with margin).
-      `max(0%,  50% - ${distToLeftVideoEdgeInEM }em + 0.4em + ${offset}) + ` +
+      `max(0%,  50% - ${distToLeftVideoEdgeInEm }em + 0.4em + ${offset}) + ` +
       // Translate to the left if bubble exceeds right video edge (with margin).
-      `min(0%, -50% + ${distToRightVideoEdgeInEM}em - 0.4em - ${offset})` +
+      `min(0%, -50% + ${distToRightVideoEdgeInEm}em - 0.4em - ${offset})` +
       ')';
   };
   bubble.style.transform =
@@ -65,10 +63,6 @@ export async function createTranslationBubble(overlayElt) {
   bubble.style.textShadow = '0.02em 0.04em 0.04em black';
   // Oh my god! It even has a blurred background!
   bubble.style.backdropFilter = 'blur(0.25em) brightness(0.55)';
-
-  // Prevent 'mouseenter' event from firing when entering the bubble -
-  // otherwise, hovering over the bubble will make it disappear.
-  bubble.style.pointerEvents = 'none';
 
   // Give the bubble its shape.
   // The method used in the following was inspired by
@@ -132,53 +126,15 @@ export async function createTranslationBubble(overlayElt) {
       'calc(2.1 * var(--handle-height)) calc(1.05 * var(--handle-height))';
   bubble.style.webkitMaskRepeat = 'no-repeat';
 
-  overlayElt.appendChild(bubble);
-
-  // When the video is in default view mode, in Chromium, the translation bubble
-  // is suffering from a rendering issue: the `mask-image` is not applied to the
-  // `backdrop-filter`. This is due to this Chromium bug:
-  // https://bugs.chromium.org/p/chromium/issues/detail?id=1229700.
-  // This is because in default view mode, the translation bubble has a
-  // relatively positioned ancestor ('#movie_player'). The bug can be avoided by
-  // positioning that ancestor statically instead.
-  const avoidChromiumBug1229700 = () => {
-    if (isMobile()) return;
-    document.querySelector('#movie_player').style.position = 'static';
-    // The static positioning of the '#movie_player' element causes the
-    // '.ytp-gradient-bottom' element to exceed the bottom rounded corners of
-    // the '#ytd-player' element. To avoid this, we set bottom left and right
-    // border radii on the '.ytp-gradient-bottom' element.
-    const borderRadius =
-      getComputedStyle(document.querySelector('#ytd-player')).borderRadius;
-    const gradientElt = document.querySelector('.ytp-gradient-bottom');
-    gradientElt.style.borderBottomLeftRadius = borderRadius;
-    gradientElt.style.borderBottomRightRadius = borderRadius;
-  };
-  avoidChromiumBug1229700();
-
-  // Element needs to be repositioned and resized when container is resized.
-  // Above, the 'em' unit is used throughout to position, size, and style.
-  // Therefore, we only need to recalculate the font size when the video is
-  // resized (and avoid the Chromium bug, since a resizing of the video could
-  // mean a change to default view mode).
-  new ResizeObserver((entries, observer) => {
-    if (document.body.contains(overlayElt)) {
-      bubble.style.fontSize = `${fontSize()}px`;
-      avoidChromiumBug1229700();
-    } else {
-      observer.disconnect();
-    }
-  }).observe(overlayElt);
+  bubbleContainer.appendChild(bubble);
 
   return bubble;
 }
 
 
 /**
- * Remove all translation bubbles. The corresponding ResizeObservers will remove
- * themselves next time they execute.
+ * Remove all translation bubbles.
  */
 export function removeTranslationBubbles() {
-  document.querySelectorAll('.translation-bubble')
-      .forEach((elt) => elt.remove());
+  easyLangsDictElts('.translation-bubble').forEach((elt) => elt.remove());
 }

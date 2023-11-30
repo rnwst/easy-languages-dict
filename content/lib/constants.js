@@ -1,8 +1,8 @@
 'use strict';
 
 /**
- * Time spent idle between OCRing of screenshots. Increase to reduce CPU load.
- * Decrease to increase responsiveness of OCRing.
+ * Time spent waiting before checking again if video is playing. This will be
+ * replaced by an event-driven implementation soon.
  * @type {number}
  */
 export const REST_TIME = 50; // in milliseconds
@@ -15,9 +15,17 @@ export const REST_TIME = 50; // in milliseconds
  * @type {object}
  */
 export const VERT_SUBTITLE_POS = {
-  start: 0.780,
-  end: 0.857,
+  top: 0.780,
+  bottom: 0.857,
 };
+
+
+/**
+ * Font size of the main subtitles of Easy Languages videos, as a fraction of
+ * the video height. The English translation subtitles are around 22% smaller.
+ * @type {number}
+ */
+export const FONT_SIZE_VIDEO_HEIGHT_FRACTION = 0.05;
 
 
 /**
