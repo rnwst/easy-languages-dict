@@ -14,11 +14,7 @@ import {VERT_SUBTITLE_POS, FONT_SIZE_VIDEO_HEIGHT_FRACTION}
  * @return {object} - Screenshot overlay element
  */
 export function createScreenshotOverlay(video, _class) {
-  const screenshotOverlay = createElement();
-  screenshotOverlay.classList.add(_class);
-  screenshotOverlay.style.position = 'absolute';
-  // YT video element container has a z-index of 10.
-  screenshotOverlay.style.zIndex = 11;
+  const screenshotOverlay = createElement(_class);
 
   // `screenshotOverlay` will become a child of the video container, not the
   // video. This is because video elements can have no children. Unfortunately,

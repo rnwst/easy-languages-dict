@@ -9,7 +9,8 @@
     {
       "matches": ["https://www.youtube.com/*", "https://m.youtube.com/*"],
       "js": ["./content/index.js"],
-      "run_at": "document_end"
+      "run_at": "document_end",
+      "css": ["./content/styles.css"]
     }
   ],
 

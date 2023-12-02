@@ -14,11 +14,7 @@ export function createPointerEnterables(words, screenshotDims) {
       easyLangsDictElts('.pointer-enterable-container')[0];
 
   words.forEach((word, wordIndex) => {
-    const pointerEnterable = createElement();
-    pointerEnterable.classList.add('pointer-enterable');
-    pointerEnterable.style.pointerEvents = 'auto';
-
-    pointerEnterable.style.position = 'absolute';
+    const pointerEnterable = createElement('pointer-enterable');
 
     pointerEnterable.style.left =
         `${100 * word.bbox.x0 / screenshotDims.width}%`;

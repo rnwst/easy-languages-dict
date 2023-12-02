@@ -1,0 +1,7 @@
+{
+  "extends": "stylelint-config-standard",
+  "ignoreFiles": ["coverage/**", "dist/**"],
+  "rules": {
+    "property-no-vendor-prefix": null
+  }
+}

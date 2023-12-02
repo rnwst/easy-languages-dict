@@ -50,7 +50,6 @@ async function main(videoId) {
       createScreenshotOverlay(video, 'translation-bubble-container');
   const pointerEnterableContainer =
       createScreenshotOverlay(video, 'pointer-enterable-container');
-  pointerEnterableContainer.style.pointerEvents = 'none';
 
   const moviePlayer = await getMoviePlayer();
 

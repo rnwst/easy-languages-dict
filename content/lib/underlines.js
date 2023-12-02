@@ -15,12 +15,7 @@ export function createUnderlines(words, screenshotDims) {
   const underlineContainer = easyLangsDictElts('.underline-container')[0];
 
   words.forEach((word, index) => {
-    const underline = createElement();
-    underline.classList.add('underline');
-
-    underline.style.borderBottom = '4px solid red';
-
-    underline.style.position = 'absolute';
+    const underline = createElement('underline');
 
     underline.style.left = `${100 * word.bbox.x0 / screenshotDims.width}%`;
     underline.style.top = `${100 * word.bbox.y0 / screenshotDims.height}%`;

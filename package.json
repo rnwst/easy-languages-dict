@@ -6,8 +6,8 @@
   "scripts": {
     "test": "jest --verbose",
     "test:coverage": "jest --coverage",
-    "lint": "eslint . --ext .js",
-    "lint:fix": "eslint . --ext .js --fix",
+    "lint": "eslint . --ext .js; stylelint '**/*.css'",
+    "lint:fix": "eslint . --ext .js --fix; stylelint '**/*.css' --fix",
     "start": "rm -rf dist .parcel-cache && parcel watch manifest.json --host localhost --config @parcel/config-webextension",
     "build": "parcel build manifest.json --config @parcel/config-webextension"
   },
@@ -26,6 +26,8 @@
     "jest": "^29.6.4",
     "jest-environment-jsdom": "^29.6.4",
     "parcel": "^2.9.1",
-    "process": "^0.11.10"
+    "process": "^0.11.10",
+    "stylelint": "^15.11.0",
+    "stylelint-config-standard": "^34.0.0"
   }
 }

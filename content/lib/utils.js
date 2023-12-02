@@ -94,11 +94,12 @@ export function getMoviePlayer() {
  * assigned the class 'easy-languages-dict'. This makes it easier to distinguish
  * them from native YouTube page elements and makes inadvertent interference
  * with the YT page less likely.
+ * @param {string} _class - Class to add to element
  * @return {object} - Easy Languages Dict element
  */
-export function createElement() {
+export function createElement(_class) {
   const element = document.createElement('div');
-  element.classList.add('easy-languages-dict');
+  element.classList.add('easy-languages-dict', _class);
   return element;
 }
 
@@ -177,7 +178,7 @@ hideBehindActivePlayerControls(pointerEnterableContainer) {
       // player controls.
       if (mutation.target.getAttribute('id') === 'player-control-overlay') {
         pointerEnterableContainer.style.zIndex =
-            mutation.target.classList.contains('fadein') ? 'auto' : '11';
+            mutation.target.classList.contains('fadein') ? 'auto' : '';
       }
     });
   });

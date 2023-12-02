@@ -1,0 +1,170 @@
+/* Pointer-enterables *********************************************************/
+
+.easy-languages-dict.pointer-enterable-container {
+  position: absolute;
+  pointer-events: none;
+  z-index: 11; /* YT video element container has a z-index of 10. */
+}
+
+
+.easy-languages-dict.pointer-enterable-container > .pointer-enterable {
+  position: absolute;
+  pointer-events: auto;
+}
+
+
+
+/* Underlines *****************************************************************/
+
+.easy-languages-dict.underline-container {
+  position: absolute;
+  z-index: 11; /* YT video element container has a z-index of 10. */
+}
+
+
+.easy-languages-dict.underline-container > .underline {
+  position: absolute;
+  border-bottom: 4px solid red;
+}
+
+
+
+/* Translation bubbles ********************************************************/
+
+.easy-languages-dict.translation-bubble-container {
+  position: absolute;
+  z-index: 11; /* YT video element container has a z-index of 10. */
+}
+
+
+.easy-languages-dict.translation-bubble-container > .translation-bubble {
+  /* Positioning **************************************************************/
+  position: absolute;
+  bottom: calc(100% + 0.8em);
+
+  /* The values of `--dist-to-left-video-edge` and
+   * `--dist-to-right-video-edge` are set via JS. */
+  left: var(--dist-to-left-video-edge);
+
+  --edge-margin: 0.4em;
+  --left-video-edge-overflow:
+    calc(50% - var(--dist-to-left-video-edge ) + var(--edge-margin));
+  --right-video-edge-overflow:
+    calc(50% - var(--dist-to-right-video-edge) + var(--edge-margin));
+
+  transform:
+    translateX(calc(
+      -50%
+      + max(0%, var(--left-video-edge-overflow ))
+      - max(0%, var(--right-video-edge-overflow))
+    ));
+
+
+  /* Styling ******************************************************************/
+  font-size: 90%;
+  width: max-content; 
+  max-width: 20em;
+
+  /* The lettering used in the Easy Languages videos is something called
+   * 'Tahoma' (for stylistic coherence, the same/a similar font is used). */
+  font-family: Tahoma, 'DejaVu Sans Condensed', sans-serif;
+
+  /* Look at that subtle off-white coloring! */
+  color: '#eee';
+
+  /* The tasteful thickness of it! */
+  text-shadow: 0.02em 0.04em 0.04em black;
+
+  /* Oh my god! It even has a blurred background! */
+  backdrop-filter: blur(0.25em) brightness(0.55);
+
+
+  /* Give the bubble its shape. ************************************************
+   * The method used in the following was inspired by
+   * https://css-tricks.com/perfect-tooltips-with-css-clipping-and-masking/.
+   * The bubble needs to be blurred as a whole, rather than composed of
+   * different elements, each of which would be blurred individually. This would
+   * cause visual discontinuities between the individual blurred elements.
+   * Therefore, the translation bubble is 'cut out' of an initial blurred box,
+   * the size of which is determined by padding and content size. */
+  --border-radius: 0.5em;
+  --handle-height: 0.33em;
+
+  /* 0.275em is the minimum expected content width (the letter 'I'). */
+  --horizontal-padding:
+      calc(var(--border-radius) + var(--handle-height) - 0.275em);
+
+  padding:
+    0.35em /* Top. */
+    var(--horizontal-padding) /* Right. */
+    /* Bottom. The bubble handle needs to be 'cut out' from here. */
+    calc(0.28em + var(--handle-height))
+    var(--horizontal-padding); /* Left. */
+
+  --radial-gradient: 
+      /* 1px of blending, to prevent aliasing at the bubble's corners. CSS
+       * gradients are not currently anti-aliased by Chromium. See
+       * https://bugs.chromium.org/p/chromium/issues/detail?id=408528. */
+      radial-gradient(
+        closest-side,
+        black calc(100% - 0.5px),
+        transparent calc(100% + 0.5px)
+      );
+  --linear-gradient: linear-gradient(black, black);
+
+  -webkit-mask-image:
+    var(--radial-gradient), /* Top left corner. */
+    var(--radial-gradient), /* Top right corner. */
+    var(--radial-gradient), /* Bottom left corner. */
+    var(--radial-gradient), /* Bottom right corner. */
+    var(--linear-gradient), /* Content. */
+    var(--linear-gradient), /* Content. */
+    conic-gradient(
+      from -45deg at 50% 100%,
+      black 0deg 90deg,
+      transparent 90deg 360deg
+    ); /* Handle. */
+
+  -webkit-mask-position:
+    left top, /* Top left corner. */
+    right top, /* Top right corner. */
+    left 0 bottom var(--handle-height), /* Bottom left corner. */
+    right 0 bottom var(--handle-height), /* Bottom right corner. */
+    0 var(--border-radius), /* Content. */
+    var(--border-radius) 0, /* Content. */
+    /* To center the handle in case of proximity to a video edge, it needs to
+     * be shifted by an additional `var(--handle-height)` (half of its width).
+     */
+    calc(
+      50%
+      - max(0%, var(--left-video-edge-overflow ) + var(--handle-height))
+      + max(0%, var(--right-video-edge-overflow) + var(--handle-height))
+    ) 100%;
+
+  --radial-mask-dim: calc(2 * var(--border-radius));
+  --linear-mask-dim: calc(100% - var(--radial-mask-dim));
+
+  -webkit-mask-size:
+    var(--radial-mask-dim) var(--radial-mask-dim), /* Top left corner. */
+    var(--radial-mask-dim) var(--radial-mask-dim), /* Top right corner. */
+    var(--radial-mask-dim) var(--radial-mask-dim), /* Bottom left corner. */
+    var(--radial-mask-dim) var(--radial-mask-dim), /* Bottom right corner. */
+    100% calc(var(--linear-mask-dim) - var(--handle-height)), /* Content. */
+    var(--linear-mask-dim) calc(100% - var(--handle-height)), /* Content. */
+    /* Handle. Oversize slightly to prevent rendering issue of small gap
+     * between bubble and handle. */
+    calc(2.1 * var(--handle-height)) calc(1.05 * var(--handle-height));
+  -webkit-mask-repeat: no-repeat;
+}
+
+
+.easy-languages-dict.translation-bubble .annotation {
+  font-size: 65%;
+
+  /* The 'annotation' class is also used by the YT page, so we have to unset a
+   * few declarations made by YT's stylesheets. */
+  position: unset;
+  color: unset;
+  padding: unset;
+  cursor: unset;
+}

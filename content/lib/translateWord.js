@@ -146,10 +146,10 @@ export default async function translateWord(
     return inContextTranslation;
   } else {
     return '' +
-        '<div><div style="font-size: 0.65em">Out of context:</div>' +
+        '<div><div class="annotation">Out of context:</div>' +
         `${outOfContextTranslation.toLowerCase()}</div>` +
         '<div style="height: 0.3em"></div>' +
-        '<div><div style="font-size: 0.65em">In context:</div>' +
+        '<div><div class="annotation">In context:</div>' +
         `${inContextTranslation}</div>`;
   }
 }
