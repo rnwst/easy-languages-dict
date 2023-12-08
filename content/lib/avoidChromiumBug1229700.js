@@ -15,12 +15,14 @@ import {waitForElt, getMoviePlayer} from './utils.js';
 export default async function avoidChromiumBug1229700() {
   (await getMoviePlayer()).style.position = 'static';
   // The static positioning of the '#movie_player' element causes the
-  // '.ytp-gradient-bottom' element to exceed the bottom rounded corners of the
-  // '#ytd-player' element. To avoid this, we set bottom left and right border
-  // radii on the '.ytp-gradient-bottom' element.
+  // '.ytp-gradient-bottom' and '.ytp-cued-thumbnail-overlay-image' elements to
+  // exceed the bottom rounded corners of the '#ytd-player' element. To avoid
+  // this, we set border radii on these elements.
   const borderRadius =
     getComputedStyle(await waitForElt('#ytd-player')).borderRadius;
   const gradientElt = await waitForElt('.ytp-gradient-bottom');
   gradientElt.style.borderBottomLeftRadius = borderRadius;
   gradientElt.style.borderBottomRightRadius = borderRadius;
+  const thumbnail = await waitForElt('.ytp-cued-thumbnail-overlay-image');
+  thumbnail.style.borderRadius = borderRadius;
 }
