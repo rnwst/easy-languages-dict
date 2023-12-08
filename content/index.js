@@ -83,7 +83,7 @@ async function main(videoId) {
       removeTranslationBubbles();
       const {words, wordIndex, screenshotDims} = evt.detail;
       const bubble = createTranslationBubble(words[wordIndex], screenshotDims);
-      const sentence = event.detail.words.map((word) => word.text);
+      const sentence = evt.detail.words.map((word) => word.text);
       translateWord(sentence, wordIndex, {from: lang.bingCode, to: 'en'})
           .then((translation) => bubble.innerHTML = translation)
           .catch((error) => bubble.textContent = error.message);
@@ -91,7 +91,7 @@ async function main(videoId) {
   });
 
   if (onDesktop()) {
-    avoidChromiumBug1229700(videoId);
+    avoidChromiumBug1229700();
   }
 
   let previouslyOCRedText = '';
