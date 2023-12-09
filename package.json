@@ -1,8 +1,5 @@
 {
-  "name": "easy-languages-dict",
-  "version": "0.0.1",
   "type": "module",
-  "description": "Browser extension which adds an interactive dictionary to subtitles of videos on the Easy Languages YouTube channels",
   "scripts": {
     "test": "jest --verbose",
     "test:coverage": "jest --coverage",
@@ -11,7 +8,6 @@
     "start": "rm -rf dist .parcel-cache && parcel watch manifest.json --host localhost --config @parcel/config-webextension",
     "build": "parcel build manifest.json --config @parcel/config-webextension"
   },
-  "author": "R. N. West",
   "license": "GPL-2.0-or-later",
   "dependencies": {
     "tesseract.js": "^5.0.3"

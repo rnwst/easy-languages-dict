@@ -2,6 +2,7 @@
   "manifest_version": 3,
   "name": "Easy Languages Dictionary",
   "version": "0.0.0",
+  "author": "R. N. West",
 
   "description": "Adds interactive dictionary to subtitles of videos on the Easy Languages YouTube channels.",
 
