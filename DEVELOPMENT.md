@@ -1,15 +1,15 @@
 # Development Notes
 
-## Parcel
+## Browser Profiles
 
-[`parcel`](https://parceljs.org/recipes/web-extension/) is used as a bundler, as content scripts don't currently support ES6 modules (imports could be done [dynamically](https://stackoverflow.com/a/53033388/20803187), but this is messy due to asynchrony, and I also don't know if this would work in `node`, a requirement for testing purposes).
+When in 'watch' mode, the build script `build.js` launches a browser instance with the extension loaded. The browser uses a profile in `browser-profiles/...`. This profile is not version-controlled, and may need to be created manually before running `npm start` for the first time. Changes to this browser profile persist across instances of `npm start`. It is recommended to install a YouTube ad-blocking extension such as uBlock Origin in the profile to improve the developer experience.
 
 
 ## Notes on Cross-Browser-Compatibility
 
 ### Manifest v2 vs v3
 
-Chrome no longer accepts new extensions using manifest v2 at the Chrome Web Store. Firefox has not implemented MV3 service workers yet (as of August 2023), but [plans to do so](https://blog.mozilla.org/addons/2022/11/17/manifest-v3-signing-available-november-21-on-firefox-nightly/) for compatibility reasons. This makes it impossible to build a cross-browser-compatible extension at this time. Once Firefox has implemented service workers (or Chrome supports background pages, but this doesn't seem like it will happen sadly), cross-compatibility will be possible again. [This](https://www.eff.org/deeplinks/2021/12/googles-manifest-v3-still-hurts-privacy-security-innovation) is an interesting article on Chrome's MV3. Support for Firefox's version of MV3 was added in `parcel-bundler` [in this PR](https://github.com/parcel-bundler/parcel/pull/8906). See also [this advice](https://github.com/fregante/browser-extension-template/issues/78#issuecomment-1586121686).
+Chrome no longer accepts new extensions using manifest v2 at the Chrome Web Store. Firefox has not implemented MV3 service workers yet (as of August 2023), but [plans to do so](https://blog.mozilla.org/addons/2022/11/17/manifest-v3-signing-available-november-21-on-firefox-nightly/) for compatibility reasons. This makes it impossible to build a cross-browser-compatible extension at this time. Once Firefox has implemented service workers (or Chrome supports background pages, but this doesn't seem like it will happen sadly), cross-compatibility will be possible again. [This](https://www.eff.org/deeplinks/2021/12/googles-manifest-v3-still-hurts-privacy-security-innovation) is an interesting article on Chrome's MV3.
 
 
 ### Browser APIs

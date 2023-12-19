@@ -1,6 +1,11 @@
 {
   "extends": "stylelint-config-standard",
-  "ignoreFiles": ["coverage/**", "dist/**"],
+  "ignoreFiles": [
+      "dist/**",
+      "browser-profiles/**",
+      "docs/**",
+      "coverage/**"
+  ],
   "rules": {
     "property-no-vendor-prefix": null
   }

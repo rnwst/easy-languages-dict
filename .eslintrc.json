@@ -9,6 +9,7 @@
   "extends": ["eslint:recommended", "google"],
   "ignorePatterns": [
     "dist/**/*.js",
+    "browser-profiles/**/*.js",
     "docs/**/*.js"
   ],
   "parserOptions": {
