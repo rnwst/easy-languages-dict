@@ -65,7 +65,7 @@ export function waitForElt(selector) {
         observer.disconnect();
         resolve(elt);
       }
-    }).observe(document.body, {childList: true, subtree: true});
+    }).observe(document, {childList: true, subtree: true});
   });
 }
 
