@@ -9,18 +9,19 @@ While I am unaffiliated with the Easy Languages franchise and this extension is 
 
 ## Installation
 
-**This extension is still a WIP and installation is not yet recommended**. For that reason, it is not yet available on any of the extension marketplaces. However, if you really cannot be discouraged:
-``` console
+**This extension is still a WIP**. For that reason, it is not yet available on any of the extension marketplaces. To install and run:
+```console
 git clone "https://github.com/rnwst/easy-languages-dict.git"
 cd easy-languages-dict
 npm install
-npm run build
+npm start
 ```
-The last command will create a subdirectory named `dist/` which contains the bundled extension. In Chrome/Chromium, type `chrome://extensions` in the address bar, and click 'Load unpacked'. Select the `dist/` folder, and confirm. This will add the extension.
+
 
 ### Supported browsers
 
-So far, this extension has only been tested on Chromium.
+The extension runs on Firefox and all Chromium-based browsers that support extensions (Chrome, MS Edge, Opera, ...).
+
 
 ### Linux
 
@@ -36,6 +37,7 @@ All languages available on the Easy Languages channels should be supported by Ea
 
 - In videos that mix languages (such as [this one](https://www.youtube.com/watch?v=ySJa8swxrJc)), only the language corresponding to the uploading channel works. If the video was uploaded by the [Easy Languages channel](https://www.youtube.com/@easylanguages), only the first language appearing in the video title works.
 - Most languages are untested so far.
+
 
 ## License
 

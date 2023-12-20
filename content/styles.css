@@ -103,8 +103,10 @@
 
   --radial-gradient: 
       /* 1px of blending, to prevent aliasing at the bubble's corners. CSS
-       * gradients are not currently anti-aliased by Chromium. See
-       * https://bugs.chromium.org/p/chromium/issues/detail?id=408528. */
+       * gradients are not currently anti-aliased, neither by Chromium nor by
+       * Firefox. See
+       * https://bugs.chromium.org/p/chromium/issues/detail?id=408528 and
+       * https://bugzilla.mozilla.org/show_bug.cgi?id=1860310. */
       radial-gradient(
         closest-side,
         black calc(100% - 0.5px),

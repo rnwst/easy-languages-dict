@@ -24,7 +24,7 @@ import {createPointerEnterables, removePointerEnterables}
 import {createTranslationBubble, removeTranslationBubbles}
   from './lib/translation-bubbles.js';
 import translateWord from './lib/translateWord.js';
-import avoidChromiumBug1229700 from './lib/avoidChromiumBug1229700.js';
+import avoidBrowserBugs from './lib/avoidBrowserBugs.js';
 
 
 /**
@@ -91,7 +91,7 @@ async function main(videoId) {
   });
 
   if (onDesktop()) {
-    avoidChromiumBug1229700();
+    avoidBrowserBugs();
   }
 
   let previouslyOCRedText = '';
