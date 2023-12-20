@@ -187,7 +187,7 @@ function esbuildOptions(entryPoint, distDir, plugin) {
     outfile: path.join(distDir, entryPoint),
     sourcemap: 'inline',
     ...(plugin && {plugins: [plugin]}),
-    logLevel: 'info',
+    logLevel: 'warning',
   };
 }
 
@@ -208,7 +208,7 @@ async function build(browser) {
   const contentScripts = manifest.content_scripts;
   for (const contentScript of contentScripts) {
     for (const script of contentScript.js) {
-      console.log(`Building content script ${script} using esbuild:`);
+      console.log(`Building content script ${script} using esbuild`);
       await esbuild.build(esbuildOptions(script, path.join(dist, browser)));
     }
   }
@@ -216,7 +216,7 @@ async function build(browser) {
   // Build background script.
   const serviceWorker = manifest.background?.service_worker;
   if (serviceWorker) {
-    console.log(`Building background script ${serviceWorker} using esbuild:`);
+    console.log(`Building background script ${serviceWorker} using esbuild`);
     await esbuild.build(
         esbuildOptions(serviceWorker, path.join(dist, browser)),
     );
@@ -344,7 +344,7 @@ async function main() {
   if (args.length === 0) {
     for (const browser of browsers) {
       const buildMsg = `Building extension for target ${browser}:`;
-      console.log(`\n\n${buildMsg}\n${'='.repeat(buildMsg.length)}`);
+      console.log(`\n${buildMsg}\n${'='.repeat(buildMsg.length)}`);
       clean(browser);
       await build(browser);
     }
