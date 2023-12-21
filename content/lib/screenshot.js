@@ -70,7 +70,7 @@ export function createScreenshotOverlay(video, _class) {
  */
 export function takeScreenshot(video, downloadScreenshot=false) {
   const canvas = document.createElement('canvas');
-  const canvasContext = canvas.getContext('2d');
+  const canvasContext = canvas.getContext('2d', {alpha: false});
   // `Canvas.height` and `.width` are in CSS pixels, whereas `video.videoHeight`
   // and `.videoWidth` are in video source file pixels. By settings the widths
   // equal, we ensure that the two can be used equivalently when calling
@@ -85,6 +85,9 @@ export function takeScreenshot(video, downloadScreenshot=false) {
                          'grayscale(100%) brightness(55%) contrast(1000%)';
 
   // https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/drawImage
+  // Note that `drawImage(video, ...)` doesn't currently work on Firefox on
+  // Android, see https://bugzilla.mozilla.org/show_bug.cgi?id=1871437. Until
+  // this is fixed, the extension won't work on Android.
   canvasContext.drawImage(
       video,
       0,
@@ -93,7 +96,8 @@ export function takeScreenshot(video, downloadScreenshot=false) {
       video.videoHeight,
   );
 
-  const screenshotBase64 = canvas.toDataURL('image/jpeg');
+  // PNG is the only format that browsers must support.
+  const screenshotBase64 = canvas.toDataURL('image/png');
   canvas.remove();
 
   if (downloadScreenshot) {
@@ -101,8 +105,7 @@ export function takeScreenshot(video, downloadScreenshot=false) {
     document.body.appendChild(link);
     link.href = screenshotBase64;
     link.target = '_self';
-    link.fileName = 'image-to-be-OCRed.jpg';
-    link.download = 'image';
+    link.download = 'image-to-be-OCRed';
     link.click();
   }
 

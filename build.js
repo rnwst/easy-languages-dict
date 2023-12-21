@@ -5,10 +5,12 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import webExt from 'web-ext';
+// See https://github.com/import-js/eslint-plugin-import/issues/1810.
+// eslint-disable-next-line import/no-unresolved
+import * as adbUtils from 'web-ext/util/adb';
 
 
 const dist = 'dist/';
-const browsers = ['chromium', 'firefox-desktop'];
 
 
 /**
@@ -24,6 +26,7 @@ function getArgs() {
  */
 function exitIfIncorrectArgs() {
   const args = getArgs();
+  const browsers = ['chromium', 'firefox-desktop', 'firefox-android'];
   if (args.length === 0) return;
   if (args.length === 2 && args[0] === 'watch' && browsers.includes(args[1])) {
     return;
@@ -34,11 +37,21 @@ function exitIfIncorrectArgs() {
 
 
 /**
+ * 'firefox-desktop' and 'firefox-android' share the same distributable.
+ * @param {string} browser - Browser
+ * @return {string} - Browser-specific distributable directory
+ */
+function browserDist(browser) {
+  return path.join(dist, browser === 'chromium' ? 'chromium' : 'firefox');
+}
+
+
+/**
  * Delete contents of 'dist/{browser}' folder.
  * @param {string} browser - Browser
  */
 function clean(browser) {
-  const distDir = path.join(dist, browser);
+  const distDir = browserDist(browser);
   if (fs.existsSync(distDir)) {
     console.log(`Cleaning out contents of ${distDir}`);
     fs.rmSync(distDir, {recursive: true});
@@ -96,7 +109,7 @@ function convertMV3ToMV2(manifest) {
  */
 function adaptManifestToBrowser(manifest, browser) {
   const newManifest = structuredClone(manifest);
-  if (browser === 'firefox-desktop') {
+  if (['firefox-desktop', 'firefox-android'].includes(browser)) {
     // The background service worker is not yet supported on Firefox:
     // https://bugzilla.mozilla.org/show_bug.cgi?id=1573659.
     newManifest.background.scripts = [manifest.background.service_worker];
@@ -199,17 +212,17 @@ function esbuildOptions(entryPoint, distDir, plugin) {
 async function build(browser) {
   const manifest = readManifest();
   const browserSpecificManifest = adaptManifestToBrowser(manifest, browser);
-  writeManifest(browserSpecificManifest, path.join(dist, browser));
+  writeManifest(browserSpecificManifest, browserDist(browser));
 
   const filesToBeSynced = getFilesToBeSynced(manifest);
-  filesToBeSynced.forEach((file) => sync(file, path.join(dist, browser)));
+  filesToBeSynced.forEach((file) => sync(file, browserDist(browser)));
 
   // Build content scripts.
   const contentScripts = manifest.content_scripts;
   for (const contentScript of contentScripts) {
     for (const script of contentScript.js) {
       console.log(`Building content script ${script} using esbuild`);
-      await esbuild.build(esbuildOptions(script, path.join(dist, browser)));
+      await esbuild.build(esbuildOptions(script, browserDist(browser)));
     }
   }
 
@@ -218,7 +231,7 @@ async function build(browser) {
   if (serviceWorker) {
     console.log(`Building background script ${serviceWorker} using esbuild`);
     await esbuild.build(
-        esbuildOptions(serviceWorker, path.join(dist, browser)),
+        esbuildOptions(serviceWorker, browserDist(browser)),
     );
   }
 }
@@ -256,14 +269,27 @@ function watchFile(file, callback) {
 async function watch(browser) {
   const extensionRunner = await webExt.cmd.run({
     // Options correspond to CLI options.
-    sourceDir: path.join(dist, browser),
+    sourceDir: browserDist(browser),
     noReload: true,
     target: browser,
-    chromiumProfile: 'browser-profiles/chromium',
-    firefoxProfile: 'browser-profiles/firefox-desktop',
-    keepProfileChanges: true,
-    profileCreateIfMissing: true,
-    startUrl: 'https://www.youtube.com/watch?v=9G9liRZvi5E',
+
+    ...(browser === 'chromium' &&
+      {chromiumProfile: 'browser-profiles/chromium'}),
+
+    ...(browser === 'firefox-desktop' &&
+      {firefoxProfile: 'browser-profiles/firefox'}),
+
+    ...(['chromium', 'firefox-desktop'].includes(browser) && {
+      keepProfileChanges: true,
+      profileCreateIfMissing: true,
+      startUrl: 'https://www.youtube.com/watch?v=9G9liRZvi5E',
+    }),
+
+    ...(browser === 'firefox-android' && {
+      adbDevice: (await adbUtils.listADBDevices())[0],
+      firefoxApk: 'org.mozilla.fenix',
+      adbRemoveOldArtifacts: true,
+    }),
   });
 
   // This esbuild plugin is needed to reload the extension if the source files
@@ -287,7 +313,7 @@ async function watch(browser) {
     // Watch non-JS files.
     getFilesToBeSynced(manifest).forEach((file) => {
       const watcher = watchFile(file, () => {
-        sync(file, path.join(dist, browser));
+        sync(file, browserDist(browser));
         extensionRunner.reloadAllExtensions();
       });
       // The contexts created by esbuild have a `dispose` method. To allow for
@@ -300,7 +326,7 @@ async function watch(browser) {
     for (const contentScript of contentScripts) {
       for (const script of contentScript.js) {
         const context = await esbuild.context(
-            esbuildOptions(script, path.join(dist, browser), reloadPlugin),
+            esbuildOptions(script, browserDist(browser), reloadPlugin),
         );
         await context.watch();
         contexts.push(context);
@@ -311,7 +337,7 @@ async function watch(browser) {
     const serviceWorker = manifest.background?.service_worker;
     if (serviceWorker) {
       const context = await esbuild.context(
-          esbuildOptions(serviceWorker, path.join(dist, browser), reloadPlugin),
+          esbuildOptions(serviceWorker, browserDist(browser), reloadPlugin),
       );
       await context.watch();
       contexts.push(context);
@@ -342,7 +368,8 @@ async function main() {
   const args = getArgs();
 
   if (args.length === 0) {
-    for (const browser of browsers) {
+    // 'firefox-desktop' and 'firefox-android' share the same distributable.
+    for (const browser of ['chromium', 'firefox-desktop']) {
       const buildMsg = `Building extension for target ${browser}:`;
       console.log(`\n${buildMsg}\n${'='.repeat(buildMsg.length)}`);
       clean(browser);

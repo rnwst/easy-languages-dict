@@ -34,5 +34,16 @@
       "resources": ["langs.csv"],
       "matches": ["https://www.youtube.com/*", "https://m.youtube.com/*"]
     }
-  ]
+  ],
+
+  "minimum_chrome_version": "116",
+
+  "browser_specific_settings": {
+    "gecko": {
+      "strict_min_version": "112.0"
+    },
+    "gecko_android": {
+      "strict_min_version": "113.0"
+    }
+  }
 }

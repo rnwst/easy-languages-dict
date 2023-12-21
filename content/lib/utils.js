@@ -76,7 +76,12 @@ export function waitForElt(selector) {
  * @return {object} - YT video element
  */
 export function getVideo() {
-  return waitForElt(onMobile() ? 'video' : '#movie_player video');
+  // On the mobile app, if autoplay is disabled, the video element is replaced
+  // once the video is played. Therefore, we need to wait until the video is
+  // playing before returning the video element. Conveniently, the
+  // to-be-replaced video element does not have a 'src' attribute, and thus an
+  // appropriate query selector is readily constructed.
+  return waitForElt(onMobile() ? 'video[src]' : '#movie_player video');
 }
 
 

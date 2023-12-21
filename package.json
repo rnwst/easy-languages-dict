@@ -4,10 +4,11 @@
     "build": "node build.js",
     "lint": "eslint . --ext .js; stylelint '**/*.css'",
     "lint-fix": "eslint . --ext .js --fix; stylelint '**/*.css' --fix",
-    "lint-web-ext": "npm run --silent build && web-ext lint --source-dir dist/firefox-desktop",
+    "lint-web-ext": "npm run --silent build && web-ext lint --source-dir dist/firefox",
     "start": "node build.js watch chromium",
     "start-chromium": "node build.js watch chromium",
     "start-firefox-desktop": "node build.js watch firefox-desktop",
+    "start-firefox-android": "node build.js watch firefox-android",
     "test": "jest --verbose",
     "test-coverage": "jest --coverage"
   },

@@ -1,6 +1,6 @@
 # Development Notes
 
-## Building the Extension
+## Building and Testing the Extension
 
 ### Build Script `build.js`
 
@@ -13,12 +13,19 @@ npx web-ext run \
   --keep-profile-changes \
   --start-url='https://www.youtube.com/watch?v=9G9liRZvi5E'
 ```
-Note that the above command does not launch `build.js` and so the extension will not be automatically rebuild if changes to the source files are made. To rebuild the extension in this case, run `npm run build` once the changes are made, and `web-ext` will then automatically update the extension.
+Note that the above command does not launch `build.js` and so the extension will not be automatically rebuilt if changes to the source files are made. To rebuild the extension in this case, run `npm run build` once the changes are made, and `web-ext` will then automatically update the extension.
 
 
-### Browser Profiles
+### Desktop Browser Profiles
 
 When in 'watch' mode, `build.js` launches a browser instance using the browser profile in `browser-profiles/{browser}`. This profile is not version-controlled, and changes to it persist across instances of `npm start`. It is recommended to install a YouTube ad-blocking extension such as uBlock Origin in the profile to improve the developer experience.
+
+
+### On Android
+
+`adb` must be installed on the computer. On Arch Linux, this is provided by the [android-tools](https://archlinux.org/packages/extra/x86_64/android-tools/) package. On the Android device, install [Firefox Nightly for Developers](https://play.google.com/store/apps/details?id=org.mozilla.fenix). Open the app, and go to *Settings* → *Advanced* and enable *Remote debugging via USB*. Then run the build script: `npm run start-firefox-android`. Open a Firefox instance on the computer, and navigate to `about:debugging`. Select *Enable USB Devices*. The device should appear in the menu on the left and can be selected. Open tabs as well as the extension's background page can then be inspected.
+
+**The extension doesn't currently work on Android**, due to [this Fenix bug](https://bugzilla.mozilla.org/show_bug.cgi?id=1871437). Until it is fixed, the extension won't run on Android. [Kiwi](https://github.com/kiwibrowser/src) is another browser that supports browser extensions on Android, but I don't know if the developers can be trusted to follow good security practices, and therefore it is unlikely that this extension will ever officially support Kiwi or recommend its usage.
 
 
 ## Debugging the Extension
