@@ -10,7 +10,7 @@ import {rewind, fastfwd} from './seek.js';
  * @return {promise} - Promise which resolves after timeout.
  */
 export function timeout(timeInMS) {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     setTimeout(() => {
       resolve();
     }, timeInMS);
@@ -57,15 +57,16 @@ export function extractVideoId(videoURL) {
 export function waitForElt(selector) {
   return new Promise((resolve) => {
     const elt = document.querySelector(selector);
-    if (elt) return resolve(elt);
-
-    new MutationObserver((mutations, observer) => {
-      const elt = document.querySelector(selector);
-      if (elt) {
-        observer.disconnect();
-        resolve(elt);
-      }
-    }).observe(document, {childList: true, subtree: true});
+    if (elt) resolve(elt);
+    else {
+      new MutationObserver((mutations, observer) => {
+        const elt = document.querySelector(selector);
+        if (elt) {
+          observer.disconnect();
+          resolve(elt);
+        }
+      }).observe(document, {childList: true, subtree: true});
+    }
   });
 }
 
@@ -209,6 +210,23 @@ hideBehindActivePlayerControls(pointerEnterableContainer) {
 
 
 /**
+ * Wait for video to be playable.
+ * @param {object} video - HTML video element
+ * @return {promise} - Whether video is ready to be played
+ */
+export function waitForPlayable(video) {
+  return new Promise((resolve) => {
+    if (video.readyState >= 3) resolve();
+    else {
+      video.addEventListener('canplay', () => {
+        resolve();
+      }, {once: true});
+    }
+  });
+}
+
+
+/**
  * Whether or not a word is translatable. Numbers and dashes can't be
  * translated.
  * @param {string} wordText - Word text
@@ -236,4 +254,16 @@ export function getImageDimensions(dataURL) {
       });
     };
   });
+}
+
+
+/**
+ * Check if a promise is resolved or not.
+ * @param {promise} promise - Promise to be checked
+ * @return {promise} - Resolves to whether promise is resolved
+ */
+export function isPromiseResolved(promise) {
+  const notAPromise = 'unlikely value';
+  return Promise.race([promise, notAPromise])
+      .then((value) => (value !== notAPromise));
 }

@@ -1,14 +1,6 @@
 'use strict';
 
 /**
- * Time spent waiting before checking again if video is playing. This will be
- * replaced by an event-driven implementation soon.
- * @type {number}
- */
-export const REST_TIME = 50; // in milliseconds
-
-
-/**
  * Vertical boundary positions of subtitle text band, as a fraction of total
  * video height. Used for taking screenshot of subtitle band, and positioning of
  * HTML elements overlaid on video.
