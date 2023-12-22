@@ -109,6 +109,10 @@ function convertMV3ToMV2(manifest) {
  */
 function adaptManifestToBrowser(manifest, browser) {
   const newManifest = structuredClone(manifest);
+  if (browser === 'chromium') {
+    // Chromium doesn't recognize `browser_specific_settings`.
+    delete newManifest.browser_specific_settings;
+  }
   if (['firefox-desktop', 'firefox-android'].includes(browser)) {
     // The background service worker is not yet supported on Firefox:
     // https://bugzilla.mozilla.org/show_bug.cgi?id=1573659.

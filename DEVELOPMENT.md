@@ -37,7 +37,7 @@ See these [notes on extension debugging](https://extensionworkshop.com/documenta
 
 ### Manifest v2 vs v3
 
-Chrome no longer accepts new extensions using manifest v2 (MV2) at the Chrome Web Store, and therefore MV3 must be used. However, I don't consider Firefox's version of MV3 useable yet. In Firefox's version of MV3, all permissions are optional, and the user is not automatically prompted for those permissions - thus, the extension doesn't work due to a lack of required permissions, and the user is left wondering why. In addition, MV3 is not (yet) supported on Firefox for Android. Therefore, the `manifest.json` in this directory is Chromium-compatible and uses MV3, and the build script `build.js` converts it to MV2 for the Firefox build during the build process.
+Chrome no longer accepts new extensions using manifest v2 (MV2) at the Chrome Web Store, and therefore MV3 must be used. However, I don't consider Firefox's version of MV3 useable yet. In Firefox's version of MV3, all permissions are optional, and the user is not automatically prompted for those permissions - thus, the extension doesn't work due to a lack of required permissions, and the user is left wondering why. In addition, MV3 is not (yet) supported on Firefox for Android. Therefore, the `manifest.json` in this directory is (mostly) Chromium-compatible (apart from the `browser_specific_settings` key) and uses MV3, and the build script `build.js` converts it to MV2 for the Firefox build during the build process.
 
 
 ### Browser Extension APIs
