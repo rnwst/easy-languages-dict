@@ -243,25 +243,55 @@ async function build(browser) {
 
 /**
  * `fs.watch()` does not work correctly, and often
- * - reports changes as a 'rename', and
- * - reports the same event more than once.
+ * - reports the same event more than once,
+ * - incorrectly reports changes as a 'rename', and
+ * - as a result doesn't report any future file changes.
  * To fix this, a custom function is provided, which checks if the underlying
- * file has actually changed.
+ * file has actually changed, and then instantiates a new file watcher to
+ * continue keeping track of any changes.
  * @param {string} file - File to be watched
  * @param {function} callback - Function to call if file changes
- * @return {object} - File watcher which may be terminated later
+ * @return {object} - File watcher context which can be terminated later
  */
-function watchFile(file, callback) {
-  let fileHash = hashFile(file);
-  return fs.watch(file, () => {
-    if (fs.existsSync(file)) {
-      if (hashFile(file) !== fileHash) {
-        console.log(`\nDetected change in file ${file}`);
-        fileHash = hashFile(file);
-        callback();
+class FileWatcherContext {
+  /* eslint-disable require-jsdoc */
+  #file;
+  #callback;
+  #abortController;
+  #fileHash;
+  #fileWatcher;
+
+  constructor(file, callback) {
+    this.#file = file;
+    this.#callback = callback;
+    this.#updateFileWatcher();
+  }
+
+  dispose() {
+    this.#abortController?.abort();
+  }
+
+  #updateFileWatcher() {
+    this.#fileHash = hashFile(this.#file);
+    this.dispose();
+    this.#abortController = new AbortController();
+    this.#fileWatcher = fs.watch(
+        this.#file,
+        {signal: this.#abortController.signal},
+        this.#fileWatcherCallback.bind(this),
+    );
+  }
+
+  #fileWatcherCallback() {
+    if (fs.existsSync(this.#file)) {
+      if (hashFile(this.#file) !== this.#fileHash) {
+        console.log(`\nDetected change in file ${this.#file}`);
+        this.#updateFileWatcher();
+        this.#callback();
       }
     }
-  });
+  }
+  /* eslint-enable require-jsdoc */
 }
 
 
@@ -316,13 +346,13 @@ async function watch(browser) {
 
     // Watch non-JS files.
     getFilesToBeSynced(manifest).forEach((file) => {
-      const watcher = watchFile(file, () => {
+      const context = new FileWatcherContext(file, () => {
         sync(file, browserDist(browser));
         extensionRunner.reloadAllExtensions();
       });
       // The contexts created by esbuild have a `dispose` method. To allow for
       // termination of all contexts using this method, we add one here as well.
-      contexts.push({dispose: () => watcher.close()});
+      contexts.push(context);
     });
 
     // Watch content scripts.
@@ -353,7 +383,7 @@ async function watch(browser) {
   let contexts = await createContexts();
 
   // Listen for changes in the manifest file.
-  watchFile('manifest.json', async () => {
+  new FileWatcherContext('manifest.json', async () => {
     console.log(`Changes detected in 'manifest.json'. Rebuilding.`);
     contexts.forEach((context) => context.dispose());
     clean(browser);
