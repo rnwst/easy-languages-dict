@@ -113,7 +113,7 @@ function adaptManifestToBrowser(manifest, browser) {
     // Chromium doesn't recognize `browser_specific_settings`.
     delete newManifest.browser_specific_settings;
   }
-  if (['firefox-desktop', 'firefox-android'].includes(browser)) {
+  if (browser.match('firefox')) {
     // The background service worker is not yet supported on Firefox:
     // https://bugzilla.mozilla.org/show_bug.cgi?id=1573659.
     newManifest.background.scripts = [manifest.background.service_worker];
@@ -403,7 +403,7 @@ async function main() {
 
   if (args.length === 0) {
     // 'firefox-desktop' and 'firefox-android' share the same distributable.
-    for (const browser of ['chromium', 'firefox-desktop']) {
+    for (const browser of ['chromium', 'firefox']) {
       const buildMsg = `Building extension for target ${browser}:`;
       console.log(`\n${buildMsg}\n${'='.repeat(buildMsg.length)}`);
       clean(browser);
