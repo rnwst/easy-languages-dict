@@ -8,6 +8,8 @@ import webExt from 'web-ext';
 // See https://github.com/import-js/eslint-plugin-import/issues/1810.
 // eslint-disable-next-line import/no-unresolved
 import * as adbUtils from 'web-ext/util/adb';
+import {optimize as optimizeSVG} from 'svgo';
+import svg2png from 'convert-svg-to-png';
 
 
 const dist = 'dist/';
@@ -112,6 +114,14 @@ function adaptManifestToBrowser(manifest, browser) {
   if (browser === 'chromium') {
     // Chromium doesn't recognize `browser_specific_settings`.
     delete newManifest.browser_specific_settings;
+    // Chromium doesn't support SVGs for icons. See
+    // https://bugs.chromium.org/p/chromium/issues/detail?id=29683.
+    for (const size in newManifest?.icons) {
+      if (size) {
+        newManifest.icons[size] =
+            newManifest.icons[size].replace(/\.svg$/, '.png');
+      }
+    }
   }
   if (browser.match('firefox')) {
     // The background service worker is not yet supported on Firefox:
@@ -127,6 +137,8 @@ function adaptManifestToBrowser(manifest, browser) {
     // required permissions, and the user is left wondering why. In addition,
     // MV3 is not (yet) supported on Firefox for Android.
     convertMV3ToMV2(newManifest);
+    // Firefox only wants a 48x48px icon, and luckily accepts SVGs.
+    delete newManifest.icons['128'];
   }
   return newManifest;
 }
@@ -177,20 +189,68 @@ function sync(file, distDir) {
   const targetDir = path.join(distDir, path.dirname(file));
   const targetFile = path.join(distDir, file);
   if (fs.existsSync(file)) {
-    if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir);
+    if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, {recursive: true});
     if (!fs.existsSync(targetFile) || hashFile(targetFile) !== hashFile(file)) {
       console.log(`Copying file ${file}`);
       fs.copyFileSync(file, targetFile);
     }
+  } else {
+    console.warn(`Attempting to copy ${file}, but it doesn't exist!`);
+  }
+}
+
+
+/**
+ * For Firefox, which accepts SVG icons, optimize SVGs before copying, and for
+ * Chromium, which doesn't accept SVGs, convert SVGs to PNGs.
+ * @param {object} icon - Icon file
+ * @param {string} size - Icon size in pixels
+ * @param {string} distDir - Directory of output file
+ */
+async function buildIcon(icon, size, distDir) {
+  const regex = /\.(?<ext>(svg|png))$/;
+  const fileEnding = icon.match(regex).groups['ext'];
+  const svgIcon = icon.replace(regex, '.svg');
+
+  const svgStr = fs.readFileSync(svgIcon);
+  const optimizedSVGStr = optimizeSVG(svgStr, {
+    plugins: [
+      {
+        name: 'preset-default',
+        params: {
+          overrides: {
+            // Firefox requires the viewBox attribute:
+            // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/icons#svg
+            removeViewBox: false,
+          },
+        },
+      },
+    ],
+  }).data;
+
+  const targetDir = path.join(distDir, path.dirname(icon));
+  if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, {recursive: true});
+
+  if (fileEnding === 'svg') {
+    console.log(`Optimizng ${icon} and writing to dist`);
+    fs.writeFileSync(path.join(distDir, icon), optimizedSVGStr);
+  } else {
+    // Chromium doesn't support SVGs unfortunately. See
+    // https://bugs.chromium.org/p/chromium/issues/detail?id=29683.
+    console.log(
+        `Converting ${svgIcon} to PNG and writing to dist`);
+    const png48 =
+        await svg2png.convert(optimizedSVGStr, {width: size, height: size});
+    fs.writeFileSync(path.join(distDir, icon), png48);
   }
 }
 
 
 /**
  * @param {string} entryPoint - Entry point for esbuild
- * @param {string} distDir - Directory of output file
+ * @param {string} distDir - Output directory
  * @param {object} plugin - Esbuild plugin
- * @return {object} - Esbuld options
+ * @return {object} - Esbuild options
  */
 function esbuildOptions(entryPoint, distDir, plugin) {
   return {
@@ -220,6 +280,14 @@ async function build(browser) {
 
   const filesToBeSynced = getFilesToBeSynced(manifest);
   filesToBeSynced.forEach((file) => sync(file, browserDist(browser)));
+
+  // Build icons.
+  const icons = browserSpecificManifest?.icons;
+  if (icons) {
+    for (const [size, icon] of Object.entries(icons)) {
+      buildIcon(icon, size, browserDist(browser));
+    }
+  }
 
   // Build content scripts.
   const contentScripts = manifest.content_scripts;
@@ -289,6 +357,8 @@ class FileWatcherContext {
         this.#updateFileWatcher();
         this.#callback();
       }
+    } else {
+      this.#abortController.abort();
     }
   }
   /* eslint-enable require-jsdoc */
@@ -326,19 +396,6 @@ async function watch(browser) {
     }),
   });
 
-  // This esbuild plugin is needed to reload the extension if the source files
-  // change.
-  const reloadPlugin = {
-    name: 'reload extension',
-    setup(build) {
-      build.onEnd((result) => {
-        if (result.errors.length === 0) {
-          extensionRunner.reloadAllExtensions();
-        }
-      });
-    },
-  };
-
   const createContexts = async () => {
     const contexts = [];
 
@@ -354,6 +411,32 @@ async function watch(browser) {
       // termination of all contexts using this method, we add one here as well.
       contexts.push(context);
     });
+
+    // Watch icons.
+    const icons = adaptManifestToBrowser(manifest, browser)?.icons;
+    if (icons) {
+      for (const [size, icon] of Object.entries(icons)) {
+        const context =
+            new FileWatcherContext(icon.replace(/\.png$/, '.svg'), () => {
+              buildIcon(icon, size, browserDist(browser));
+              extensionRunner.reloadAllExtensions();
+            });
+        contexts.push(context);
+      }
+    }
+
+    // This esbuild plugin is needed to reload the extension if the source files
+    // change.
+    const reloadPlugin = {
+      name: 'reload extension',
+      setup(build) {
+        build.onEnd((result) => {
+          if (result.errors.length === 0) {
+            extensionRunner.reloadAllExtensions();
+          }
+        });
+      },
+    };
 
     // Watch content scripts.
     const contentScripts = manifest.content_scripts;

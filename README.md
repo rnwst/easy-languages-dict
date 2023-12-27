@@ -41,4 +41,4 @@ All languages available on the Easy Languages channels should be supported by Ea
 
 ## License
 
-© 2023 R.&thinsp;N. West. Released under the [GPL](https://www.gnu.org/licenses/old-licenses/gpl-2.0.html) version 2 or greater. This software carries no warranty of any kind.
+© 2023 R.&thinsp;N. West. Released under the [GPL](https://www.gnu.org/licenses/old-licenses/gpl-2.0.html) version 2 or greater. This software carries no warranty of any kind. Note that the license only covers the code published in this repository and not any trademarks. If you redistribute the software, modified or unmodified, make sure to change its name and icons so that your derivative cannot be mistaken for the original.

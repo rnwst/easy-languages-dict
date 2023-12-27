@@ -6,6 +6,11 @@
 
   "description": "Adds interactive dictionary to subtitles of videos on the Easy Languages YouTube channels.",
 
+  "icons": {
+      "48": "icons/48.svg",
+      "128": "icons/128.svg"
+  },
+
   "content_scripts": [
     {
       "matches": ["https://www.youtube.com/*", "https://m.youtube.com/*"],
