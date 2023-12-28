@@ -16,8 +16,14 @@ import {
   isPromiseResolved,
 } from './lib/utils.js';
 import getLang from './lib/getLang.js';
-import {createScreenshotOverlay, takeScreenshot} from './lib/screenshot.js';
-import {createUnderlines, removeUnderlines} from './lib/underlines.js';
+import {createWorker} from 'tesseract.js';
+import {createScreenshotOverlay, takeScreenshots} from './lib/screenshot.js';
+import {
+  createUnderlines,
+  removeUnderlines,
+  illuminateUnderline,
+  unilluminateUnderlines,
+} from './lib/underlines.js';
 import {createPointerEnterables, removePointerEnterables}
   from './lib/pointer-enterables.js';
 import {createTranslationBubble, removeTranslationBubbles}
@@ -64,7 +70,6 @@ async function main() {
 
   addRewindFastfwdListener();
 
-  const {createWorker} = require('tesseract.js');
   const worker = await createWorker(lang.tesseractCode);
 
   const video = await getVideo();
@@ -106,7 +111,9 @@ async function main() {
   translationBubbleContainer.addEventListener('translation-request', (evt) => {
     if (document.contains(translationBubbleContainer)) {
       removeTranslationBubbles();
+      unilluminateUnderlines();
       const {words, wordIndex, screenshotDims} = evt.detail;
+      illuminateUnderline(wordIndex);
       const bubble = createTranslationBubble(words[wordIndex], screenshotDims);
       const sentence = evt.detail.words.map((word) => word.text);
       translateWord(sentence, wordIndex, {from: lang.bingCode, to: 'en'})
@@ -134,8 +141,8 @@ async function main() {
       recentlyPausedOrSeeked = false;
 
       await waitForPlayable(video);
-      const screenshot = takeScreenshot(video);
-      const {data} = await worker.recognize(screenshot);
+      const {textImage, descenderMask} = takeScreenshots(video);
+      const {data} = await worker.recognize(textImage);
       if (previouslyOCRedText !== data.text) {
         previouslyOCRedText = data.text;
 
@@ -143,14 +150,14 @@ async function main() {
             data.words.filter((word) => isTranslatable(word.text)) :
             [];
 
-        const screenshotDims = await getImageDimensions(screenshot);
+        const screenshotDims = await getImageDimensions(textImage);
 
         removeUnderlines();
         removePointerEnterables();
         removeTranslationBubbles();
 
         createPointerEnterables(words, screenshotDims);
-        createUnderlines(words, screenshotDims);
+        createUnderlines(words, screenshotDims, descenderMask);
       }
     }
   };

@@ -10,19 +10,23 @@ import {easyLangsDictElts, createElement} from './utils.js';
  * translation bubble above it.
  * @param {array} words - OCRed words
  * @param {object} screenshotDims - Dimensions of OCRed screenshot
+ * @param {string} descenderMask - Mask image to mask out descenders
  */
-export function createUnderlines(words, screenshotDims) {
+export function createUnderlines(words, screenshotDims, descenderMask) {
   const underlineContainer = easyLangsDictElts('.underline-container')[0];
+
+  underlineContainer.style.setProperty(
+      '--descender-mask',
+      `url(${descenderMask})`,
+  );
 
   words.forEach((word, index) => {
     const underline = createElement('underline');
 
-    underline.style.left = `${100 * word.bbox.x0 / screenshotDims.width}%`;
-    underline.style.top = `${100 * word.bbox.y0 / screenshotDims.height}%`;
-    underline.style.width =
-        `${100 * (word.bbox.x1 - word.bbox.x0) / screenshotDims.width}%`;
-    underline.style.height =
-        `${100 * (word.bbox.y1 - word.bbox.y0) / screenshotDims.height}%`;
+    underline.style.left = `${100 * word.baseline.x0 / screenshotDims.width}%`;
+    underline.style.right =
+        `${100 * (1 - word.baseline.x1 / screenshotDims.width)}%`;
+    underline.style.top = `${100 * word.baseline.y0 / screenshotDims.height}%`;
 
     underlineContainer.appendChild(underline);
   });
@@ -34,4 +38,24 @@ export function createUnderlines(words, screenshotDims) {
  */
 export function removeUnderlines() {
   easyLangsDictElts('.underline').forEach((elt) => elt.remove());
+}
+
+
+/**
+ * Unilluminate any illuminated underlines (there shouldn't ever be more than
+ * one).
+ */
+export function unilluminateUnderlines() {
+  easyLangsDictElts('.underline').forEach((elt) => {
+    elt.classList.remove('illuminated');
+  });
+}
+
+
+/**
+ * @param {number} wordIndex - Index of word whose underline is to be
+ * illuminated
+ */
+export function illuminateUnderline(wordIndex) {
+  easyLangsDictElts('.underline')[wordIndex].classList.add('illuminated');
 }

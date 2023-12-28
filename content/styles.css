@@ -19,12 +19,40 @@
 .easy-languages-dict.underline-container {
   position: absolute;
   z-index: 11; /* YT video element container has a z-index of 10. */
+
+  /* The value of `--descender-mask` is set via JS. The second mask ensures that
+   * the text's shadow is masked out as well. */
+  -webkit-mask-image:
+      var(--descender-mask),
+      var(--descender-mask);
+  -webkit-mask-size:
+      100% 100%,
+      100% 100%;
+  -webkit-mask-position:
+      left       0 top       0,
+      left +0.03em top  0.04em;
+  mask-mode: luminance;
+  mask-composite: intersect;
 }
 
 
 .easy-languages-dict.underline-container > .underline {
+  --thickness: 0.09em;
+
   position: absolute;
-  border-bottom: 4px solid red;
+  height: var(--thickness);
+  transform: translateY(0.10em);
+  border-radius: var(--thickness);
+  margin-left: calc(-1 * var(--thickness) / 2);
+  margin-right: calc(-1 * var(--thickness) / 2);
+  background: #99f;
+  box-shadow: 0.02em 0.035em 0.04em black;
+}
+
+
+.easy-languages-dict.underline-container > .underline.illuminated {
+  /* A brighter version of 'Easy Languages Yellow' */
+  background: hsl(40.9deg 100% 75%);
 }
 
 

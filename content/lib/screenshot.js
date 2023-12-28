@@ -65,30 +65,31 @@ export function createScreenshotOverlay(video, _class) {
  * Take screenshot of the portion of the video element containing the text to be
  * OCRed.
  * @param {object} video - YT video element
- * @param {boolean} downloadScreenshot - Download screenshot for debugging?
- * @return {string} - Data URI in base64 format
+ * @return {object} - Data URI in base64 format
  */
-export function takeScreenshot(video, downloadScreenshot=false) {
+export function takeScreenshots(video) {
   const canvas = document.createElement('canvas');
-  const canvasContext = canvas.getContext('2d', {alpha: false});
-  // `Canvas.height` and `.width` are in CSS pixels, whereas `video.videoHeight`
+  // The buffer canvas is needed to hold a screenshot in memory, so that
+  // different filters can be applied to it. This is because canvas filters need
+  // to be applied before `drawImage` is called.
+  const bufferCanvas = document.createElement('canvas');
+  const canvasCtx = canvas.getContext('2d', {alpha: false});
+  const bufferCanvasCtx = bufferCanvas.getContext('2d', {alpha: false});
+  // `canvas.height` and `.width` are in CSS pixels, whereas `video.videoHeight`
   // and `.videoWidth` are in video source file pixels. By settings the widths
   // equal, we ensure that the two can be used equivalently when calling
   // `canvasContext.drawImage`.
   canvas.height =
       (VERT_SUBTITLE_POS.bottom - VERT_SUBTITLE_POS.top) * video.videoHeight;
+  bufferCanvas.height = canvas.height;
   canvas.width = video.videoWidth;
-
-  // CSS filters are applied to produce black text on white background, which
-  // gives best results when performing the OCR.
-  canvasContext.filter = 'brightness(60%) contrast(400%) invert() ' +
-                         'grayscale(100%) brightness(55%) contrast(1000%)';
+  bufferCanvas.width = canvas.width;
 
   // https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/drawImage
   // Note that `drawImage(video, ...)` doesn't currently work on Firefox on
   // Android, see https://bugzilla.mozilla.org/show_bug.cgi?id=1871437. Until
   // this is fixed, the extension won't work on Android.
-  canvasContext.drawImage(
+  bufferCanvasCtx.drawImage(
       video,
       0,
       -VERT_SUBTITLE_POS.top * video.videoHeight,
@@ -96,18 +97,28 @@ export function takeScreenshot(video, downloadScreenshot=false) {
       video.videoHeight,
   );
 
-  // PNG is the only format that browsers must support.
-  const screenshotBase64 = canvas.toDataURL('image/png');
-  canvas.remove();
+  // This CSS filter is used to produce black text on white background, which
+  // gives best results when performing the OCR.
+  const ocrFilter =
+      'brightness(60%) contrast(4) invert() grayscale() brightness(55%) ' +
+      'contrast(10)';
 
-  if (downloadScreenshot) {
-    const link = document.createElement('a');
-    document.body.appendChild(link);
-    link.href = screenshotBase64;
-    link.target = '_self';
-    link.download = 'image-to-be-OCRed';
-    link.click();
-  }
+  // This CSS filter is used to produce a mask-image for the
+  // underline-container, to mask out underlines around descenders. It also
+  // produces black text on white background, but adds some blur.
+  const descenderMaskFilter =
+      'brightness(60%) contrast(9999) grayscale() invert() blur(0.15em) ' +
+      'brightness(55%) contrast(5) brightness(2)';
 
-  return screenshotBase64;
+  const getScreenshotBase64 = (filter) => {
+    canvasCtx.filter = filter;
+    canvasCtx.drawImage(bufferCanvas, 0, 0);
+    // PNG is the only format that browsers must support.
+    return canvas.toDataURL('image/png');
+  };
+
+  const textImage = getScreenshotBase64(ocrFilter);
+  const descenderMask = getScreenshotBase64(descenderMaskFilter);
+
+  return {textImage, descenderMask};
 }

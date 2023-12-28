@@ -18,12 +18,12 @@ export function createPointerEnterables(words, screenshotDims) {
 
     pointerEnterable.style.left =
         `${100 * word.bbox.x0 / screenshotDims.width}%`;
+    pointerEnterable.style.right =
+        `${100 * (1 - word.bbox.x1 / screenshotDims.width)}%`;
     pointerEnterable.style.top =
         `${100 * word.bbox.y0 / screenshotDims.height}%`;
-    pointerEnterable.style.width =
-        `${100 * (word.bbox.x1 - word.bbox.x0) / screenshotDims.width}%`;
-    pointerEnterable.style.height =
-        `${100 * (word.bbox.y1 - word.bbox.y0) / screenshotDims.height}%`;
+    pointerEnterable.style.bottom =
+        `${100 * (1 - word.bbox.y1 / screenshotDims.height)}%`;
 
     pointerEnterable.addEventListener('pointerenter', () => {
       easyLangsDictElts('.translation-bubble-container')[0]
