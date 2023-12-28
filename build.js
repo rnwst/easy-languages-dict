@@ -145,6 +145,32 @@ function adaptManifestToBrowser(manifest, browser) {
 
 
 /**
+ * @param {string} distDir - Output directory
+ */
+function copyTesseractFiles(distDir) {
+  console.log('Copying Tesseract.js files');
+  const tesseractFiles = [
+    'node_modules/tesseract.js/dist/worker.min.js',
+    'node_modules/tesseract.js/dist/worker.min.js.map',
+  ];
+  const tesseractCoreFiles = [
+    'node_modules/tesseract.js-core/tesseract-core-lstm.wasm.js',
+    'node_modules/tesseract.js-core/tesseract-core-simd-lstm.wasm.js',
+  ];
+  for (const [dir, files] of [
+    ['tesseract', tesseractFiles],
+    ['tesseract-core', tesseractCoreFiles],
+  ]) {
+    const targetDir = path.join(distDir, 'content', dir);
+    fs.mkdirSync(targetDir, {recursive: true});
+    files.forEach((file) => {
+      fs.copyFileSync(file, path.join(targetDir, path.basename(file)));
+    });
+  }
+}
+
+
+/**
  * Get list of non-JS files to be copied to `dist/`.
  * @param {object} manifest - Manifest
  * @return {array} - Array of files to be copied to `dist/`
@@ -161,7 +187,11 @@ function getFilesToBeSynced(manifest) {
   // Web accessible resources.
   const webAccessibleResources = manifest.web_accessible_resources;
   for (const webAccessibleResource of webAccessibleResources) {
-    files.push(...webAccessibleResource.resources);
+    for (const resource of webAccessibleResource.resources) {
+      // Don't attempt to sync the tesseract files, as they are copied
+      // separately.
+      if (!resource.match('tesseract')) files.push(resource);
+    }
   }
   return files;
 }
@@ -277,6 +307,8 @@ async function build(browser) {
   const manifest = readManifest();
   const browserSpecificManifest = adaptManifestToBrowser(manifest, browser);
   writeManifest(browserSpecificManifest, browserDist(browser));
+
+  copyTesseractFiles(browserDist(browser));
 
   const filesToBeSynced = getFilesToBeSynced(manifest);
   filesToBeSynced.forEach((file) => sync(file, browserDist(browser)));

@@ -16,7 +16,7 @@ import {
   isPromiseResolved,
 } from './lib/utils.js';
 import getLang from './lib/getLang.js';
-import {createWorker} from 'tesseract.js';
+import createOCRWorker from './lib/createOCRWorker.js';
 import {createScreenshotOverlay, takeScreenshots} from './lib/screenshot.js';
 import {
   createUnderlines,
@@ -70,7 +70,7 @@ async function main() {
 
   addRewindFastfwdListener();
 
-  const worker = await createWorker(lang.tesseractCode);
+  const worker = await createOCRWorker(lang.tesseractCode);
 
   const video = await getVideo();
 

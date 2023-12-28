@@ -36,7 +36,11 @@
 
   "web_accessible_resources": [
     {
-      "resources": ["langs.csv"],
+      "resources": [
+        "content/tesseract/*",
+        "content/tesseract-core/*",
+        "langs.csv"
+      ],
       "matches": ["https://www.youtube.com/*", "https://m.youtube.com/*"]
     }
   ],
