@@ -86,8 +86,8 @@ export function takeScreenshots(video) {
   bufferCanvas.width = canvas.width;
 
   // https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/drawImage
-  // Note that `drawImage(video, ...)` doesn't currently work on Firefox on
-  // Android, see https://bugzilla.mozilla.org/show_bug.cgi?id=1871437. Until
+  // Note that `drawImage(video, ...)` doesn't currently work on Firefox for
+  // Android, see https://bugzilla.mozilla.org/show_bug.cgi?id=1872508. Until
   // this is fixed, the extension won't work on Android.
   bufferCanvasCtx.drawImage(
       video,
