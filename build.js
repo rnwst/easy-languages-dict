@@ -292,6 +292,7 @@ function esbuildOptions(entryPoint, distDir, plugin) {
     // resolved, `bundle` can be set to `(background.type === 'module')`.
     bundle: true,
     outfile: path.join(distDir, entryPoint),
+    minify: true,
     sourcemap: 'inline',
     ...(plugin && {plugins: [plugin]}),
     logLevel: 'warning',
