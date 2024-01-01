@@ -10,6 +10,7 @@ import webExt from 'web-ext';
 import * as adbUtils from 'web-ext/util/adb';
 import {optimize as optimizeSVG} from 'svgo';
 import svg2png from 'convert-svg-to-png';
+import archiver from 'archiver';
 
 
 const dist = 'dist/';
@@ -301,10 +302,33 @@ function esbuildOptions(entryPoint, distDir, plugin) {
 
 
 /**
+ * @param {string} sourceDir - Folder to compress
+ * @param {string} outPath - Output path (ZIP file)
+ * @return {promise}
+ */
+function zipDirectory(sourceDir, outPath) {
+  const archive = archiver('zip', {zlib: {level: 9}});
+  const stream = fs.createWriteStream(outPath);
+
+  return new Promise((resolve, reject) => {
+    archive
+        .directory(sourceDir, false)
+        .on('error', (err) => reject(err))
+        .pipe(stream)
+    ;
+
+    stream.on('close', () => resolve());
+    archive.finalize();
+  });
+}
+
+
+/**
  * Build function.
  * @param {string} browser - Browser to build for
+ * @param {boolean} zip - Whether to also zip the built extension
  */
-async function build(browser) {
+async function build(browser, zip=false) {
   const manifest = readManifest();
   const browserSpecificManifest = adaptManifestToBrowser(manifest, browser);
   writeManifest(browserSpecificManifest, browserDist(browser));
@@ -338,6 +362,14 @@ async function build(browser) {
     await esbuild.build(
         esbuildOptions(serviceWorker, browserDist(browser)),
     );
+  }
+
+  if (zip) {
+    // For publishing on AMO or the Chrome Web Store, the extension must be
+    // zipped.
+    const zipFile = browserDist(browser) + '.zip';
+    console.log(`Zipping built extension to ${zipFile}`);
+    await zipDirectory(browserDist(browser), zipFile);
   }
 }
 
@@ -523,7 +555,7 @@ async function main() {
       const buildMsg = `Building extension for target ${browser}:`;
       console.log(`\n${buildMsg}\n${'='.repeat(buildMsg.length)}`);
       clean(browser);
-      await build(browser);
+      await build(browser, true);
     }
     console.log('\n');
   } else {
