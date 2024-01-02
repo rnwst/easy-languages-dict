@@ -23,9 +23,17 @@ When in 'watch' mode, `build.js` launches a browser instance using the browser p
 
 ### On Android
 
-`adb` must be installed on the computer. On Arch Linux, this is provided by the [android-tools](https://archlinux.org/packages/extra/x86_64/android-tools/) package. On the Android device, install [Firefox Nightly for Developers](https://play.google.com/store/apps/details?id=org.mozilla.fenix). Open the app, and go to *Settings* → *Advanced* and enable *Remote debugging via USB*. Then run the build script: `npm run start-firefox-android`. Open a Firefox instance on the computer, and navigate to `about:debugging`. Select *Enable USB Devices*. The device should appear in the menu on the left and can be selected. Open tabs as well as the extension's background page can then be inspected.
+Firefox for Android is the only major browser to support extensions on Android, however, due to [this Firefox for Android bug](https://bugzilla.mozilla.org/show_bug.cgi?id=1872508), **the extension doesn't currently work on Firefox for Android**.
 
-**The extension doesn't currently work on Android**, due to [this Firefox for Android bug](https://bugzilla.mozilla.org/show_bug.cgi?id=1872508). Until it is fixed, the extension won't run on Android. [Kiwi](https://github.com/kiwibrowser/src) is another browser that supports browser extensions on Android, but I don't know if the developers can be trusted to follow good security practices, and therefore it is unlikely that this extension will ever officially support Kiwi or recommend its usage.
+If you would nonetheless like to test the extension on Firefox for Android, first edit `manifest.json` and add the following entry under `browser_specific_settings`:
+```json
+    "gecko_android": {
+      "strict_min_version": "113.0"
+    }
+```
+Then, make sure that `adb` is installed on the computer. On Arch Linux, this is provided by the [android-tools](https://archlinux.org/packages/extra/x86_64/android-tools/) package. On the Android device, install [Firefox Nightly for Developers](https://play.google.com/store/apps/details?id=org.mozilla.fenix). Open the app, go to *Settings* → *Advanced*, and enable *Remote debugging via USB*. Then run the build script: `npm run start-firefox-android`. Open a Firefox instance on the computer, and navigate to `about:debugging`. Select *Enable USB Devices*. The device should appear in the menu on the left and can be connected to. Open tabs as well as the extension's background page can then be inspected.
+
+[Kiwi](https://github.com/kiwibrowser/src) is another browser that supports browser extensions on Android, but I don't know if the developers can be trusted to follow good security practices, and therefore it is unlikely that this extension will ever officially support Kiwi or recommend its usage.
 
 
 ## Debugging the Extension
