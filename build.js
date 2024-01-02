@@ -50,16 +50,15 @@ function browserDist(browser) {
 
 
 /**
- * Delete contents of 'dist/{browser}' folder.
- * @param {string} browser - Browser
+ * Delete contents of directory.
+ * @param {string} dir - Directory to clean out
  */
-function clean(browser) {
-  const distDir = browserDist(browser);
-  if (fs.existsSync(distDir)) {
-    console.log(`Cleaning out contents of ${distDir}`);
-    fs.rmSync(distDir, {recursive: true});
+function cleanDirectory(dir='dist/') {
+  if (fs.existsSync(dir)) {
+    console.log(`Cleaning out contents of ${dir}`);
+    fs.rmSync(dir, {recursive: true});
   }
-  fs.mkdirSync(distDir, {recursive: true});
+  fs.mkdirSync(dir, {recursive: true});
 }
 
 
@@ -367,7 +366,7 @@ async function build(browser, zip=false) {
   if (zip) {
     // For publishing on AMO or the Chrome Web Store, the extension must be
     // zipped.
-    const zipFile = browserDist(browser) + '.zip';
+    const zipFile = path.join(dist, manifest.version + '-' + browser + '.zip');
     console.log(`Zipping built extension to ${zipFile}`);
     await zipDirectory(browserDist(browser), zipFile);
   }
@@ -534,7 +533,7 @@ async function watch(browser) {
   new FileWatcherContext('manifest.json', async () => {
     console.log(`Changes detected in 'manifest.json'. Rebuilding.`);
     contexts.forEach((context) => context.dispose());
-    clean(browser);
+    cleanDirectory(browserDist(browser));
     await build(browser);
     extensionRunner.reloadAllExtensions();
     contexts = await createContexts();
@@ -549,12 +548,13 @@ async function main() {
   exitIfIncorrectArgs();
   const args = getArgs();
 
+  cleanDirectory();
+
   if (args.length === 0) {
     // 'firefox-desktop' and 'firefox-android' share the same distributable.
     for (const browser of ['chromium', 'firefox']) {
       const buildMsg = `Building extension for target ${browser}:`;
       console.log(`\n${buildMsg}\n${'='.repeat(buildMsg.length)}`);
-      clean(browser);
       await build(browser, true);
     }
     console.log('\n');
