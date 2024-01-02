@@ -9,7 +9,7 @@ While I am unaffiliated with the Easy Languages franchise and this extension is 
 
 ## Installation
 
-**This extension is still a WIP**. For that reason, it is not yet available on any of the extension marketplaces. To install and run:
+**This extension is still a WIP**. For that reason, it is not yet available on any of the extension marketplaces. To test the extension:
 ```console
 git clone "https://github.com/rnwst/easy-languages-dict.git"
 cd easy-languages-dict
@@ -30,13 +30,7 @@ In the interest of stylistic coherence, for its translations, Easy Languages Dic
 
 ## Supported languages
 
-All languages available on the Easy Languages channels should be supported by Easy Languages Dictionary, except for Miskito, Mooré, and Oshiwambo. However, very few have been tested so far!
-
-
-## Known issues
-
-- In videos that mix languages (such as [this one](https://www.youtube.com/watch?v=ySJa8swxrJc)), only the language corresponding to the uploading channel works. If the video was uploaded by the [Easy Languages channel](https://www.youtube.com/@easylanguages), only the first language appearing in the video title works.
-- Most languages are untested so far.
+Most languages available on the Easy Languages channels are supported by Easy Languages Dictionary, however very few have been tested so far!
 
 
 ## License
