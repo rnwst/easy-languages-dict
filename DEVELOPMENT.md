@@ -2,6 +2,16 @@
 
 ## Building and Testing the Extension
 
+### Get Started
+
+```console
+git clone "https://github.com/rnwst/easy-languages-dict.git"
+cd easy-languages-dict
+npm install
+npm start
+```
+
+
 ### Build Script `build.js`
 
 The extension can be built using the build script `build.js`, which is executed by the various `npm` commands in `package.json`. For Chromium, manifest version 3 (MV3) is used, and for Firefox (both desktop and Android versions) MV2 is used. The build script uses [esbuild](https://github.com/evanw/esbuild) for bundling. It also has a 'watch' mode. In this mode, the script launches a browser, watches for changes to the source files, and reloads the updated extension in the browser. This functionality is provided by [web-ext](https://github.com/mozilla/web-ext). This works fine for Chromium, but unfortunately [launching Firefox via web-ext's API is currently broken](https://github.com/mozilla/web-ext/issues/2993), and therefore the command `npm run start-firefox-desktop` does not work. Instead, the following command must be used when testing on Firefox:
