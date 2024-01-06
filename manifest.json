@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "author": "R. N. West",
 
-  "description": "Adds interactive dictionary to subtitles of videos on the Easy Languages YouTube channels.",
+  "description": "Adds an interactive dictionary to subtitles of videos on the Easy Languages YouTube channels.",
 
   "icons": {
       "48": "icons/48.svg",
