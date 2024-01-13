@@ -1,14 +1,14 @@
 {
   "type": "module",
   "scripts": {
-    "build": "node build.js",
+    "build": "node scripts/build",
     "lint": "eslint . --ext .js; stylelint '**/*.css'",
     "lint-fix": "eslint . --ext .js --fix; stylelint '**/*.css' --fix",
-    "lint-web-ext": "npm run --silent build && web-ext lint --source-dir dist/firefox",
-    "start": "node build.js watch chromium",
-    "start-chromium": "node build.js watch chromium",
-    "start-firefox-desktop": "node build.js watch firefox-desktop",
-    "start-firefox-android": "node build.js watch firefox-android",
+    "lint-web-ext": "npm run --silent scripts/build && web-ext lint --source-dir dist/firefox",
+    "start": "node scripts/build watch chromium",
+    "start-chromium": "node scripts/build watch chromium",
+    "start-firefox-desktop": "node scripts/build watch firefox-desktop",
+    "start-firefox-android": "node scripts/build watch firefox-android",
     "test": "jest --verbose",
     "test-coverage": "jest --coverage"
   },
