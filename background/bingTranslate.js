@@ -48,7 +48,7 @@ async function requestTranslation(text, options) {
   };
 
   const response = await fetch(
-      `https://www.bing.com/ttranslatev3?isVertical=1&&IG=${authData.ig}` +
+      `https://www.bing.com/ttranslatev3?isVertical=1&IG=${authData.ig}` +
       `&IID=${authData.iid}`,
       {
         method: 'POST',
