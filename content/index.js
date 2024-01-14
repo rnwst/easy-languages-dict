@@ -116,7 +116,12 @@ async function main() {
       illuminateUnderline(wordIndex);
       const bubble = createTranslationBubble(words[wordIndex], screenshotDims);
       const sentence = evt.detail.words.map((word) => word.text);
-      translateWord(sentence, wordIndex, {from: lang.bingCode, to: 'en'})
+      translateWord(
+          sentence,
+          wordIndex,
+          lang.defaultTranslator,
+          {from: lang.bingCode, to: 'en'},
+      )
           .then((translation) => bubble.innerHTML = translation)
           .catch((error) => bubble.textContent = error.message);
     }

@@ -1,6 +1,5 @@
 'use strict';
 
-// eslint-disable-next-line no-unused-vars
 import googleTranslate from './googleTranslate.js';
 import bingTranslate from './bingTranslate.js';
 
@@ -15,11 +14,23 @@ const dicts = {};
 
 /**
  * Generate key name for translations to be stored in `dicts`.
- * @param {object} translationOptions - Object containing translation languages
+ * @param {string} translator - Translator
+ * @param {object} languageCodes - Language codes
  * @return {string} - Key name for `dict`
  */
-export function genDictName(translationOptions) {
-  return translationOptions.from + '-' + translationOptions.to;
+export function genDictName(translator, languageCodes) {
+  return translator + languageCodes.from + '-' + languageCodes.to;
+}
+
+
+/**
+ * Get translation function depending on which translator is to be used.
+ * @param {string} translator - Translation translator
+ * @return {function} - Translation function
+ */
+function getTranslatorFunction(translator) {
+  if (translator === 'bing') return bingTranslate;
+  if (translator === 'google') return googleTranslate;
 }
 
 
@@ -34,9 +45,9 @@ export function genDictName(translationOptions) {
 export default function respondToTranslationRequest(
     message, sender, sendResponse) {
   const text = message.text;
-  const options = message.translationOptions;
+  const translate = getTranslatorFunction(message.translator);
 
-  const dictName = genDictName(options);
+  const dictName = genDictName(message.translator, message.languageCodes);
   (dictName in dicts) || (dicts[dictName] = {});
 
   const sendTranslation = (translationPromise) => {
@@ -74,7 +85,7 @@ export default function respondToTranslationRequest(
   // Translation already cached?
   if (typeof dicts[dictName][text] === 'undefined') {
     // No, so send request for translation.
-    const translationPromise = bingTranslate(text, options);
+    const translationPromise = translate(text, message.languageCodes);
     // Cache translation.
     dicts[dictName][text] = translationPromise;
     sendTranslation(translationPromise);
