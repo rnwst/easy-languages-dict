@@ -30,8 +30,9 @@
   ],
 
   "host_permissions": [
-    "https://translate.google.com/",
-    "https://www.bing.com/"
+    "https://translate.googleapis.com/*",
+    "https://www.bing.com/translator",
+    "https://www.bing.com/ttranslatev3*"
   ],
 
   "web_accessible_resources": [
