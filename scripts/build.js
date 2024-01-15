@@ -437,15 +437,19 @@ class FileWatcherContext {
 async function watch(browser) {
   const extensionRunner = await webExt.cmd.run({
     // Options correspond to CLI options.
-    sourceDir: browserDist(browser),
+    // Firefox requires absolute paths.
+    sourceDir: path.join(process.cwd(), browserDist(browser)),
     noReload: true,
     target: browser,
 
     ...(browser === 'chromium' &&
       {chromiumProfile: 'browser-profiles/chromium'}),
 
-    ...(browser === 'firefox-desktop' &&
-      {firefoxProfile: 'browser-profiles/firefox'}),
+    ...(browser === 'firefox-desktop' && {
+      // Firefox requires an absolute paths.
+      firefoxProfile: path.join(process.cwd(), 'browser-profiles/firefox'),
+      firefox: 'deved',
+    }),
 
     ...(['chromium', 'firefox-desktop'].includes(browser) && {
       keepProfileChanges: true,
