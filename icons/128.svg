@@ -452,10 +452,10 @@
      inkscape:label="crease" />
   <path
      fill="#af2e38"
-     d="m 15,42 4,3.5 V 39 h -8 v 1 5.5 z"
+     d="m 15,42 4,3.5 V 39 h -8 v 6.5 z"
      style="fill:url(#linearGradient183);fill-opacity:1;stroke-width:1.10722"
      id="ribbon"
-     sodipodi:nodetypes="ccccccc" />
+     sodipodi:nodetypes="cccccc" />
   <g
      id="translation-symbol"
      style="stroke:#3c3c3c;stroke-width:2.8;stroke-dasharray:none;stroke-opacity:1"
