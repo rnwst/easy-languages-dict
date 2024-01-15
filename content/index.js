@@ -15,8 +15,10 @@ import {
   getImageDimensions,
   isPromiseResolved,
 } from './lib/utils.js';
+import getVideoMetadata from './lib/getVideoMetadata.js';
 import getLang from './lib/getLang.js';
 import createOCRWorker from './lib/createOCRWorker.js';
+import getSubtitlePosition from './lib/getSubtitlePosition.js';
 import {createScreenshotOverlay, takeScreenshots} from './lib/screenshot.js';
 import {
   createUnderlines,
@@ -63,7 +65,8 @@ chrome.runtime.onMessage.addListener((message) => {
 async function main() {
   const videoId = extractVideoId(document.URL);
 
-  const lang = await getLang(videoId);
+  const videoMetadata = await getVideoMetadata(videoId);
+  const lang = await getLang(videoMetadata);
   // If the language does not appear in `langs.csv` or if it is unsupported by
   // Tesseract, return.
   if (!lang || (lang.tesseractCode == '-')) return;
@@ -74,12 +77,21 @@ async function main() {
 
   const video = await getVideo();
 
+  const subtitlePosition =
+      getSubtitlePosition(lang.name, videoId, videoMetadata.publicationDate);
+
   const underlineContainer =
-      createScreenshotOverlay(video, 'underline-container');
-  const translationBubbleContainer =
-      createScreenshotOverlay(video, 'translation-bubble-container');
-  const pointerEnterableContainer =
-      createScreenshotOverlay(video, 'pointer-enterable-container');
+      createScreenshotOverlay(video, subtitlePosition, 'underline-container');
+  const translationBubbleContainer = createScreenshotOverlay(
+      video,
+      subtitlePosition,
+      'translation-bubble-container',
+  );
+  const pointerEnterableContainer = createScreenshotOverlay(
+      video,
+      subtitlePosition,
+      'pointer-enterable-container',
+  );
 
   const moviePlayer = await getMoviePlayer();
 
@@ -146,7 +158,8 @@ async function main() {
       recentlyPausedOrSeeked = false;
 
       await waitForPlayable(video);
-      const {textImage, descenderMask} = takeScreenshots(video);
+      const {textImage, descenderMask} =
+          takeScreenshots(video, subtitlePosition);
       const {data} = await worker.recognize(textImage);
       if (previouslyOCRedText !== data.text) {
         previouslyOCRedText = data.text;

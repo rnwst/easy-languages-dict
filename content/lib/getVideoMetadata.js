@@ -138,7 +138,7 @@ export function extractChannelHandle(channelURL) {
  * @return {object} - Video Metadata
  */
 export default async function getVideoMetadata(videoId) {
-  let title; let channelURL;
+  let title; let channelURL; let publicationDate;
   const fetchTitleAndChannelURL = async (webClientVersion) => {
     const response =
         await fetchMetadata(videoId);
@@ -146,6 +146,8 @@ export default async function getVideoMetadata(videoId) {
     title = responseData.videoDetails?.title;
     channelURL =
         responseData.microformat?.playerMicroformatRenderer?.ownerProfileUrl;
+    publicationDate = new Date(
+        responseData.microformat?.playerMicroformatRenderer?.publishDate);
   };
 
   await fetchTitleAndChannelURL(getWebClientVersion());
@@ -155,7 +157,7 @@ export default async function getVideoMetadata(videoId) {
   // hopefully be enough time to update this extension). Nonetheless, it is
   // advisable to try the newest web client version first, as the API cannot be
   // expected to support old web clients indefinitely.
-  if ((!title || !channelURL) &&
+  if ((!title || !channelURL || !publicationDate) &&
       (WEB_CLIENT_VERSION != KNOWN_WEB_CLIENT_VERSION)) {
     console.error(
         'Easy Languages Dictionary: Unable to obtain channel and video title ' +
@@ -166,12 +168,12 @@ export default async function getVideoMetadata(videoId) {
 
   const channelHandle = extractChannelHandle(channelURL);
 
-  if (!title || !channelHandle) {
+  if (!title || !channelHandle || !publicationDate) {
     throw new Error(
         'Easy Languages Dictionary: Unable to obtain video metadata ' +
         `for videoId ${videoId}!`,
     );
   }
 
-  return {channelHandle, title};
+  return {channelHandle, title, publicationDate};
 }

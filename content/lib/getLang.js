@@ -1,5 +1,4 @@
 import readLangsDotCSV from './readLangsDotCSV.js';
-import getVideoMetadata from './getVideoMetadata.js';
 
 
 /**
@@ -58,11 +57,10 @@ export function extractLangFromTitle(videoTitle) {
 /**
  * Determine language of Easy Languages video. Return falsy value if video is
  * not an Easy Languages video.
- * @param {string} videoId - YT video Id
+ * @param {string} videoMetadata - Video metadata
  * @return {string} - Language of current video
  */
-export default async function getLang(videoId) {
-  const videoMetadata = await getVideoMetadata(videoId);
+export default async function getLang(videoMetadata) {
   if (videoMetadata.channelHandle === 'easylanguages') {
     return getLangByName(extractLangFromTitle(videoMetadata.title));
   } else {

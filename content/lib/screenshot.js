@@ -1,8 +1,7 @@
 'use strict';
 
 import {createElement} from './utils.js';
-import {VERT_SUBTITLE_POS, FONT_SIZE_VIDEO_HEIGHT_FRACTION}
-  from './constants.js';
+import {FONT_SIZE_VIDEO_HEIGHT_FRACTION} from './constants.js';
 
 
 /**
@@ -10,10 +9,11 @@ import {VERT_SUBTITLE_POS, FONT_SIZE_VIDEO_HEIGHT_FRACTION}
  * portion of the video that was screenshot. This element is automatically
  * resized and repositioned when the video is resized.
  * @param {object} video - YT video element
+ * @param {object} subtitlePosition - Subtitle Position
  * @param {string} _class - Class to be assigned to element
  * @return {object} - Screenshot overlay element
  */
-export function createScreenshotOverlay(video, _class) {
+export function createScreenshotOverlay(video, subtitlePosition, _class) {
   const screenshotOverlay = createElement(_class);
 
   // `screenshotOverlay` will become a child of the video container, not the
@@ -24,10 +24,10 @@ export function createScreenshotOverlay(video, _class) {
   const positionOverlay = () => {
     screenshotOverlay.style.left = `${video.offsetLeft}px`;
     screenshotOverlay.style.top =
-        `${video.offsetTop + VERT_SUBTITLE_POS.top * video.offsetHeight}px`;
+        `${video.offsetTop + subtitlePosition.top * video.offsetHeight}px`;
     screenshotOverlay.style.width = `${video.offsetWidth}px`;
     screenshotOverlay.style.height =
-        `${(VERT_SUBTITLE_POS.bottom - VERT_SUBTITLE_POS.top) *
+        `${(subtitlePosition.bottom - subtitlePosition.top) *
            video.offsetHeight}px`;
   };
   positionOverlay();
@@ -65,9 +65,10 @@ export function createScreenshotOverlay(video, _class) {
  * Take screenshot of the portion of the video element containing the text to be
  * OCRed.
  * @param {object} video - YT video element
+ * @param {object} subtitlePosition - Subtitle position
  * @return {object} - Data URI in base64 format
  */
-export function takeScreenshots(video) {
+export function takeScreenshots(video, subtitlePosition) {
   const canvas = document.createElement('canvas');
   // The buffer canvas is needed to hold a screenshot in memory, so that
   // different filters can be applied to it. This is because canvas filters need
@@ -80,7 +81,7 @@ export function takeScreenshots(video) {
   // equal, we ensure that the two can be used equivalently when calling
   // `canvasContext.drawImage`.
   canvas.height =
-      (VERT_SUBTITLE_POS.bottom - VERT_SUBTITLE_POS.top) * video.videoHeight;
+      (subtitlePosition.bottom - subtitlePosition.top) * video.videoHeight;
   bufferCanvas.height = canvas.height;
   canvas.width = video.videoWidth;
   bufferCanvas.width = canvas.width;
@@ -92,7 +93,7 @@ export function takeScreenshots(video) {
   bufferCanvasCtx.drawImage(
       video,
       0,
-      -VERT_SUBTITLE_POS.top * video.videoHeight,
+      -subtitlePosition.top * video.videoHeight,
       video.videoWidth,
       video.videoHeight,
   );
