@@ -421,8 +421,6 @@ class FileWatcherContext {
         this.#updateFileWatcher();
         this.#callback();
       }
-    } else {
-      this.#abortController.abort();
     }
   }
   /* eslint-enable require-jsdoc */
