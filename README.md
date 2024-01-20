@@ -4,11 +4,19 @@
 <h1 align="center">Easy Languages Dictionary</h1>
 <h1 align="center">
   <a href="https://addons.mozilla.org/en-US/firefox/addon/easy-languages-dictionary/">
-    <img src='./README-files/get-the-addon.svg' width='150px'/>
+    <img src='./README-files/get-the-addon.svg' height='60px'/>
+  </a>
+  &emsp;
+  <a href="https://chromewebstore.google.com/detail/cclabikdbgmiadcihncalbdchliaambo">
+    <img src='./README-files/chrome-web-store.svg' height='60px'/>
+  </a>
+  &emsp;
+  <a href="https://chromewebstore.google.com/detail/cclabikdbgmiadcihncalbdchliaambo">
+    <img src='./README-files/edge-web-store.svg' height='60px'/>
   </a>
 </h1>
 
-*Easy Languages Dictionary* is a browser extension to help you learn spoken languages. It provides translations of individual words in the subtitles of videos published by any of the [*Easy Languages* YouTube channels](https://www.youtube.com/@easylanguages/playlists). It recognizes the words in the subtitles using [Tesseract](https://github.com/naptha/tesseract.js/) and translates them using various online translation services. **It's still a WIP.**
+*Easy Languages Dictionary* is a browser extension to help you learn spoken languages. It provides translations of individual words in the subtitles of videos published by any of the [*Easy Languages* YouTube channels](https://www.youtube.com/@easylanguages/playlists). It recognizes the words in the subtitles using [Tesseract](https://github.com/naptha/tesseract.js/) and translates them using various online translation services.
 
 <img src='./README-files/demo.webp' width='100%' />*This demonstration shows an excerpt from [this video](https://www.youtube.com/watch?v=prYx-rYtKgc) - © 2023 [Easy Polish YouTube Channel](https://www.youtube.com/@EasyPolish).*
 
@@ -17,7 +25,11 @@ While I am unaffiliated with the Easy Languages franchise and this extension is 
 
 ### Supported browsers
 
-The extension runs on Firefox and all Chromium-based browsers that support extensions (Chrome, MS Edge, Opera, ...). However, it hasn't been published on the Chrome Web Store yet.
+The extension runs on [Firefox](https://addons.mozilla.org/en-US/firefox/addon/easy-languages-dictionary/) and all Chromium-based browsers that support extensions ([Chrome](https://chromewebstore.google.com/detail/cclabikdbgmiadcihncalbdchliaambo), [MS Edge](https://chromewebstore.google.com/detail/cclabikdbgmiadcihncalbdchliaambo), [Opera](https://chromewebstore.google.com/detail/cclabikdbgmiadcihncalbdchliaambo), ...).
+
+The extension is not available for Safari, for the following reasons:
+- Publishing a Safari extension requires enrolling in the 'Apple Developer Program', at a cost of 99 $/year, which I have very little appetite for.
+- Safari [doesn't support some WebExtension APIs](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/webNavigation/onHistoryStateUpdated#browser_compatibility) which this extension relies on.
 
 
 ### Linux
