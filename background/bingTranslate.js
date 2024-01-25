@@ -54,6 +54,11 @@ async function requestTranslation(text, options) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
+          // The User-agent needs to be set for testing purposes in node, as
+          // Bing Translate appears to have introduced UA checks in Jan 2024.
+          'User-agent':
+              'Mozilla/5.0 (X11; Linux x86_64; rv:123.0) ' +
+              'Gecko/20100101 Firefox/123.0',
         },
         body: new URLSearchParams(payload),
       },
