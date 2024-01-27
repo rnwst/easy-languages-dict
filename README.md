@@ -3,9 +3,19 @@
 </p>
 <h1 align="center">Easy Languages Dictionary</h1>
 <div align="center">
-  <a href="https://addons.mozilla.org/en-US/firefox/addon/easy-languages-dictionary/"><img src='./README-files/get-the-addon.svg' height='60px' width='200px'/></a>
   <a href="https://chromewebstore.google.com/detail/cclabikdbgmiadcihncalbdchliaambo"><img src='./README-files/chrome-web-store.svg' height='60px' width='225px'/></a>
   <a href="https://chromewebstore.google.com/detail/cclabikdbgmiadcihncalbdchliaambo"><img src='./README-files/edge-web-store.svg' height='60px' width='225px'/></a>
+  <a href="https://addons.mozilla.org/en-US/firefox/addon/easy-languages-dictionary/"><img src='./README-files/get-the-addon.svg' height='60px' width='200px'/></a>
+</div>
+<div>&nbsp;</div>
+<div align="center">
+  <img src="https://img.shields.io/chrome-web-store/v/cclabikdbgmiadcihncalbdchliaambo" />
+  <img src="https://img.shields.io/chrome-web-store/stars/cclabikdbgmiadcihncalbdchliaambo" />
+  <img src="https://img.shields.io/chrome-web-store/users/cclabikdbgmiadcihncalbdchliaambo" />
+  <br>
+  <img src="https://img.shields.io/amo/v/easy-languages-dictionary" />
+  <img src="https://img.shields.io/amo/stars/easy-languages-dictionary" />
+  <img src="https://img.shields.io/amo/users/easy-languages-dictionary" />
 </div>
 <div>&nbsp;</div>
 
