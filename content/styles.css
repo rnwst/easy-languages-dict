@@ -198,3 +198,9 @@
   padding: unset;
   cursor: unset;
 }
+
+
+.easy-languages-dict.translation-bubble .error {
+  font-size: 85%;
+  color: #f66;
+}

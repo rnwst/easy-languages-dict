@@ -135,7 +135,8 @@ async function main() {
           {from: lang.bingCode, to: 'en'},
       )
           .then((translation) => bubble.innerHTML = translation)
-          .catch((error) => bubble.textContent = error.message);
+          .catch((error) => bubble.innerHTML =
+            `<div class="error">${error.name}: ${error.message}</div>`);
     }
   });
 

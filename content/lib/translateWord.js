@@ -71,22 +71,6 @@ export function removePunctuation(wordWithPunctuation) {
 
 
 /**
- * Log error, and throw error with user-friendly error message.
- * @param {error} error - Error to be handled
- */
-export function handleTranslationError(error) {
-  console.error('easy-languages-dict: Translation error occurred:\n', error);
-  if (error.message === 'Failed to fetch') {
-    // eslint-disable-next-line quotes
-    throw new Error("You don't currently have a working internet connection.");
-  } else {
-    throw new Error('An unfamiliar error occurred, see console output for ' +
-                     'more details.');
-  }
-}
-
-
-/**
  * Translate text by making a request to the background script and parsing the
  * response (and dealing with potential errors).
  * @param {string} text - Text to be translated
@@ -96,8 +80,7 @@ export function handleTranslationError(error) {
 async function translate(text, translator, languageCodes) {
   // Firefox supports usage of the `chrome` object for compatibility reasons.
   return chrome.runtime.sendMessage({text, translator, languageCodes})
-      .then((response) => parseResponse(response))
-      .catch((error) => handleTranslationError(error));
+      .then((response) => parseResponse(response));
 }
 
 
