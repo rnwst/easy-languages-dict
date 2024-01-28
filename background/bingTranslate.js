@@ -1,26 +1,30 @@
 'use strict';
 
 /**
-The Bing Translate API seems to perform much better than Google Translate at
-contextual translation, at least for pl->en. Inspired by the `POST` requests
-made by `bing.com/translator`.
+Bing Translate seems to perform much better than Google Translate at contextual
+translation, at least for pl->en. Inspired by the `POST` requests made by
+`bing.com/translator`.
 */
 
 
-/**
- * Authorization data for Bing Translate. Needed to access the API. Kindly
- * supplied by `bing.com/translator`.
- * @type {object}
- */
-const authData = {};
+import {getStoredData, storeData, isPromiseResolved} from './utils.js';
+
+
+// Promise used to prevent authentication data from being fetched twice if two
+// translation requests are made in quick succession. Translation requests
+// always come in pairs (out-of-context and in-context translations).
+let authDataPromise;
 
 
 /**
- * Obtain authorization data for the Bing Translate API.
+ * Obtain authentication data for the Bing Translate API.
+ * @return {object} - Authentication data
  */
-async function obtainAuthorizationData() {
-  const translatePage = await fetch('https://www.bing.com/translator')
-      .then((response) => response.text());
+async function fetchAuthData() {
+  const authData = {};
+  const url = 'https://www.bing.com/translator';
+  console.debug(`Fetching authentication data from ${url}`);
+  const translatePage = await fetch(url).then((response) => response.text());
   // What all this authorisation data means is anyone's guess. We're just trying
   // to match the requests that are posted when visiting bing.com/translator.
   authData.ig = translatePage.match(/IG:"(.*?)"/)[1];
@@ -29,6 +33,25 @@ async function obtainAuthorizationData() {
       translatePage.match(/params_AbusePreventionHelper = (.*?);/)[1]);
   authData.token = abusePreventionHelper[1];
   authData.key = abusePreventionHelper[0];
+
+  return authData;
+}
+
+
+/**
+ * Obtain authentication data for the Bing Translate API from storage if it has
+ * previously been stored, otherwise fetch authentication data and store it.
+ * @param {boolean} refresh - Whether to fetch new authentication data
+ * @return {object} - Authentication data
+ */
+async function getAuthData(refresh=false) {
+  const authDataStorageKey = 'bingTranslateAuthData';
+  let authData = await getStoredData(authDataStorageKey);
+  if (!authData || refresh) {
+    authData= await fetchAuthData();
+    await storeData(authDataStorageKey, authData);
+  }
+  return authData;
 }
 
 
@@ -38,6 +61,8 @@ async function obtainAuthorizationData() {
  * @param {object} options - Translation options (languages)
  */
 async function requestTranslation(text, options) {
+  const authData = await authDataPromise;
+
   const payload = {
     fromLang: options.from,
     text,
@@ -71,7 +96,7 @@ async function requestTranslation(text, options) {
   // the request is successful, `responsData` has no `statusCode` poperty.
   const statusCode = responseData.statusCode || response.status;
   if (statusCode != 200) {
-    throw new Error(`Received status code ${statusCode} from Bing Translate!`);
+    throw new Error(`Received status code ${statusCode} from Bing Translate.`);
   } else {
     return responseData[0].translations[0].text;
   }
@@ -85,19 +110,20 @@ async function requestTranslation(text, options) {
  * @return {object} - Translation promise resolving to translated string
  */
 export default async function bingTranslate(text, options) {
-  // When running this function for the first time, authorization data needs to
-  // be obtained before sending a translation request.
-  if (!Object.keys(authData).length) {
-    await obtainAuthorizationData();
-  }
+  if (!authDataPromise) authDataPromise = getAuthData();
 
   let translation;
   try {
     translation = await requestTranslation(text, options);
   } catch (error) {
-    // Most likely, the authorization data has expired. Obtain new authorization
-    // data, and try one more time.
-    await obtainAuthorizationData();
+    // Most likely, the authentication data has expired. Obtain new
+    // authentication data, and try one more time. If another instance of this
+    // function has already requested new authentication data, don't fetch it
+    // again.
+    if (await isPromiseResolved(authDataPromise)) {
+      console.warn(`${error}\nUpdating auth data and trying again.`);
+      authDataPromise = getAuthData(true);
+    }
     translation = await requestTranslation(text, options);
   }
 

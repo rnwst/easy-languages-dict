@@ -2,6 +2,7 @@
 
 import googleTranslate from '../background/googleTranslate.js';
 import bingTranslate from '../background/bingTranslate.js';
+import * as utils from '../background/utils.js';
 
 
 describe('translators', () => {
@@ -19,6 +20,28 @@ describe('translators', () => {
   });
 
   describe('bingTranslate', () => {
+    jest.spyOn(utils, 'getStoredData').mockImplementation(() => {
+      return Promise.resolve();
+    });
+
+    jest.spyOn(utils, 'storeData').mockImplementation(() => {
+      return Promise.resolve();
+    });
+
+    it('fetches auth data only once', async () => {
+      // `fetchAuthData` prints to debug console when it is called.
+      const consoleMock = jest.spyOn(console, 'debug').mockImplementation();
+      const fetchSpy = jest.spyOn(window, 'fetch');
+      await Promise.all([
+        bingTranslate('a', {from: 'en', to: 'de'}),
+        bingTranslate('b', {from: 'en', to: 'de'}),
+      ]);
+      expect(consoleMock).toHaveBeenCalledTimes(1);
+      expect(fetchSpy).toHaveBeenCalledTimes(3);
+      consoleMock.mockRestore();
+      fetchSpy.mockRestore();
+    });
+
     it('translates', async () => {
       const translation = await bingTranslate(
           'Hello',
