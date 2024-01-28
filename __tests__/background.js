@@ -1,8 +1,8 @@
 'use strict';
 
-import googleTranslate from '../background/googleTranslate.js';
-import bingTranslate from '../background/bingTranslate.js';
-import * as utils from '../background/utils.js';
+import googleTranslate from '../background/lib/translators/googleTranslate.js';
+import bingTranslate from '../background/lib/translators/bingTranslate.js';
+import * as utils from '../background/lib/utils.js';
 
 
 describe('translators', () => {

@@ -7,7 +7,7 @@ translation, at least for pl->en. Inspired by the `POST` requests made by
 */
 
 
-import {getStoredData, storeData, isPromiseResolved} from './utils.js';
+import {getStoredData, storeData, isPromiseResolved} from '../utils.js';
 
 
 // Promise used to prevent authentication data from being fetched twice if two

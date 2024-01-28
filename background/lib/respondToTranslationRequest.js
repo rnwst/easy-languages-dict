@@ -1,7 +1,7 @@
 'use strict';
 
-import googleTranslate from './googleTranslate.js';
-import bingTranslate from './bingTranslate.js';
+import googleTranslate from './translators/googleTranslate.js';
+import bingTranslate from './translators/bingTranslate.js';
 
 
 /**
