@@ -6,7 +6,7 @@
  * @return {string} - Escaped text
  */
 export function escapeHTML(text) {
-  const elt = document.createElement('span');
+  const elt = document.createElement('b');
   elt.textContent = text;
   return elt.textContent;
 }
@@ -14,7 +14,7 @@ export function escapeHTML(text) {
 
 /**
  * Create string to be sent to translation API by concatenating the sentence's
- * words and wrapping the word of interest in `<span>` tags.
+ * words and wrapping the word of interest in `<b>` tags.
  * @param {array} sentence - Array of words comprising sentence
  * @param {number} wordIndex - Index of word to be translated in context
  * @return {string} - String to be sent to translation API
@@ -22,7 +22,7 @@ export function escapeHTML(text) {
 function wrapWordInSpanTags(sentence, wordIndex) {
   return sentence.map((word, index) => {
     word = escapeHTML(word);
-    return (index === wordIndex) ? '<span>' + word + '</span>' : word;
+    return (index === wordIndex) ? '<b>' + word + '</b>' : word;
   }).join(' ');
 }
 
@@ -49,12 +49,12 @@ export function parseResponse(response) {
 
 
 /**
- * Return word wrapped in `<span>` tags.
+ * Return word wrapped in `<b>` tags.
  * @param {string} translation - Received translation
- * @return {string} - Word wrapped in `<span>` tags
+ * @return {string} - Word wrapped in `<b>` tags
  */
-export function wordInSpanTags(translation) {
-  return translation.match(/<span>(?<word>.*?)<\/span>/)?.groups?.word;
+export function wordInTags(translation) {
+  return translation.match(/<b>(?<word>.*?)<\/b>/)?.groups?.word;
 }
 
 
@@ -113,9 +113,9 @@ export default async function translateWord(
         .then((translation) => {
           // Google and Bing Translate frequently fail at contextual
           // translation. Google often returns a translation which doesn't
-          // contain any `<span>` tags, and Bing often returns a translation
-          // where the `<span>` tags are empty.
-          const translatedWord = removePunctuation(wordInSpanTags(translation));
+          // contain any `<b>` tags, and Bing often returns a translation
+          // where the `<b>` tags are empty.
+          const translatedWord = removePunctuation(wordInTags(translation));
           if (!translatedWord || (translatedWord === '')) {
             return '-';
           } else {
