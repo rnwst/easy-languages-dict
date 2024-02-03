@@ -1,9 +1,7 @@
 'use strict';
 
 /**
-Bing Translate seems to perform much better than Google Translate at contextual
-translation, at least for pl->en. Inspired by the `POST` requests made by
-`bing.com/translator`.
+Inspired by the `POST` requests made by `bing.com/translator`.
 */
 
 

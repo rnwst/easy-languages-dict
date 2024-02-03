@@ -2,6 +2,7 @@
 
 import googleTranslate from '../background/lib/translators/googleTranslate.js';
 import bingTranslate from '../background/lib/translators/bingTranslate.js';
+import deepL from '../background/lib/translators/deepL.js';
 import * as utils from '../background/lib/utils.js';
 
 
@@ -48,6 +49,36 @@ describe('translators', () => {
           {
             from: 'en',
             to: 'de',
+          },
+      );
+      expect(translation).toEqual('Hallo');
+    });
+  });
+
+  describe('deepL', () => {
+    it('translates sentence with lots of \'i\'s', async () => {
+      await expect(Promise.all([
+        deepL(
+            'iguanas ingest insects',
+            {from: 'EN', to: 'ZH'},
+        ),
+        deepL(
+            'icy igloos invite imagination',
+            {from: 'EN', to: 'FR'},
+        ),
+        deepL(
+            'incredible iguanas illuminate intricate, imaginary islands',
+            {from: 'EN', to: 'PL'},
+        ),
+      ])).resolves.toBeTruthy();
+    });
+
+    it('translates', async () => {
+      const translation = await deepL(
+          'Hello',
+          {
+            from: 'EN',
+            to: 'DE',
           },
       );
       expect(translation).toEqual('Hallo');

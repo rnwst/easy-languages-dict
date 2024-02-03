@@ -2,6 +2,7 @@
 
 import googleTranslate from './translators/googleTranslate.js';
 import bingTranslate from './translators/bingTranslate.js';
+import deepL from './translators/deepL.js';
 
 
 /**
@@ -31,6 +32,7 @@ export function genDictName(translator, languageCodes) {
 function getTranslatorFunction(translator) {
   if (translator === 'bing') return bingTranslate;
   if (translator === 'google') return googleTranslate;
+  if (translator === 'deepL') return deepL;
 }
 
 

@@ -132,7 +132,10 @@ async function main() {
           sentence,
           wordIndex,
           lang.defaultTranslator,
-          {from: lang.bingCode, to: 'en'},
+          {
+            from: lang[lang.defaultTranslator + 'Code'],
+            to: (lang.defaultTranslator == 'deepL') ? 'EN' : 'en',
+          },
       )
           .then((translation) => bubble.innerHTML = translation)
           .catch((error) => bubble.innerHTML =
