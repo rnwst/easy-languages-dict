@@ -16,11 +16,11 @@ const dicts = {};
 /**
  * Generate key name for translations to be stored in `dicts`.
  * @param {string} translator - Translator
- * @param {object} languageCodes - Language codes
+ * @param {object} langCodes - Language codes
  * @return {string} - Key name for `dict`
  */
-export function genDictName(translator, languageCodes) {
-  return translator + languageCodes.from + '-' + languageCodes.to;
+export function genDictName(translator, langCodes) {
+  return translator + langCodes.from + '-' + langCodes.to;
 }
 
 
@@ -49,7 +49,7 @@ export default function respondToTranslationRequest(
   const text = message.text;
   const translate = getTranslatorFunction(message.translator);
 
-  const dictName = genDictName(message.translator, message.languageCodes);
+  const dictName = genDictName(message.translator, message.langCodes);
   (dictName in dicts) || (dicts[dictName] = {});
 
   const sendTranslation = (translationPromise) => {
@@ -87,7 +87,7 @@ export default function respondToTranslationRequest(
   // Translation already cached?
   if (typeof dicts[dictName][text] === 'undefined') {
     // No, so send request for translation.
-    const translationPromise = translate(text, message.languageCodes);
+    const translationPromise = translate(text, message.langCodes);
     // Cache translation.
     dicts[dictName][text] = translationPromise;
     sendTranslation(translationPromise);

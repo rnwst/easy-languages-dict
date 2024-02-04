@@ -19,7 +19,7 @@ export function escapeHTML(text) {
  * @param {number} wordIndex - Index of word to be translated in context
  * @return {string} - String to be sent to translation API
  */
-function wrapWordInSpanTags(sentence, wordIndex) {
+function wrapWordInTags(sentence, wordIndex) {
   return sentence.map((word, index) => {
     word = escapeHTML(word);
     return (index === wordIndex) ? '<b>' + word + '</b>' : word;
@@ -75,11 +75,15 @@ export function removePunctuation(wordWithPunctuation) {
  * response (and dealing with potential errors).
  * @param {string} text - Text to be translated
  * @param {string} translator - Translator to be used
- * @param {object} languageCodes - Languages codes
+ * @param {string} langCode - Code of language to be translated
  */
-async function translate(text, translator, languageCodes) {
+async function translate(text, translator, langCode) {
+  const langCodes = {
+    from: langCode,
+    to: (translator === 'deepL') ? 'EN' : 'en',
+  };
   // Firefox supports usage of the `chrome` object for compatibility reasons.
-  return chrome.runtime.sendMessage({text, translator, languageCodes})
+  return chrome.runtime.sendMessage({text, translator, langCodes})
       .then((response) => parseResponse(response));
 }
 
@@ -95,24 +99,31 @@ async function translate(text, translator, languageCodes) {
  * @param {array} sentence - List of words forming sentence containing word to
  * be translated
  * @param {number} wordIndex - Array index of word to be translated
- * @param {string} translator - Translator to be used
- * @param {object} languageCodes - Language codes
+ * @param {object} lang - Language object
  * @return {object} - Promise resolving to translated word
  */
-export default async function translateWord(
-    sentence, wordIndex, translator, languageCodes) {
+export default async function translateWord(sentence, wordIndex, lang) {
   const word = escapeHTML(sentence[wordIndex]);
-  const wordWithContext = wrapWordInSpanTags(sentence, wordIndex);
   const outOfContextTranslationPromise =
-    translate(word, translator, languageCodes)
+    translate(
+        word,
+        lang.defaultOutOfContextTranslator,
+        lang[lang.defaultOutOfContextTranslator + 'Code'],
+    )
         // To prevent XSS attacks if the server returns malicious content, we
         // need to sanitize the response.
         .then((translation) => escapeHTML(removePunctuation(translation)));
+
+  const wordWithContext = wrapWordInTags(sentence, wordIndex);
   const inContextTranslationPromise =
     (sentence.length === 1) ?
     // If we are only translating one word, don't send two translation requests.
     outOfContextTranslationPromise :
-    translate(wordWithContext, translator, languageCodes)
+    translate(
+        wordWithContext,
+        lang.defaultInContextTranslator,
+        lang[lang.defaultInContextTranslator + 'Code'],
+    )
         .then((translation) => {
           // Google and Bing Translate frequently fail at contextual
           // translation. Google often returns a translation which doesn't

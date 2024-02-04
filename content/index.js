@@ -131,11 +131,7 @@ async function main() {
       translateWord(
           sentence,
           wordIndex,
-          lang.defaultTranslator,
-          {
-            from: lang[lang.defaultTranslator + 'Code'],
-            to: (lang.defaultTranslator == 'deepL') ? 'EN' : 'en',
-          },
+          lang,
       )
           .then((translation) => bubble.innerHTML = translation)
           .catch((error) => bubble.innerHTML =
