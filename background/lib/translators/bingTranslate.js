@@ -79,9 +79,9 @@ async function requestTranslation(text, options) {
           'Content-Type': 'application/x-www-form-urlencoded',
           // The User-agent needs to be set for testing purposes in node, as
           // Bing Translate appears to have introduced UA checks in Jan 2024.
-          'User-agent':
-              'Mozilla/5.0 (X11; Linux x86_64; rv:123.0) ' +
-              'Gecko/20100101 Firefox/123.0',
+          // PS: These checks appear to have been removed again in Feb 2024.
+          // Anyway, it's safest to keep setting the UA for testing.
+          'User-agent': navigator.userAgent,
         },
         body: new URLSearchParams(payload),
       },
@@ -91,7 +91,7 @@ async function requestTranslation(text, options) {
 
   // Strangely, the API will return a status code of 200 even if the request was
   // unsuccessful. The actual status code can then be found in the response. If
-  // the request is successful, `responsData` has no `statusCode` poperty.
+  // the request is successful, `responseData` has no `statusCode` property.
   const statusCode = responseData.statusCode || response.status;
   if (statusCode != 200) {
     throw new Error(`Received status code ${statusCode} from Bing Translate.`);
