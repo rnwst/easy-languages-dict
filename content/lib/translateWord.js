@@ -109,6 +109,9 @@ export default async function translateWord(
         // need to sanitize the response.
         .then((translation) => escapeHTML(removePunctuation(translation)));
   const inContextTranslationPromise =
+    (sentence.length === 1) ?
+    // If we are only translating one word, don't send two translation requests.
+    outOfContextTranslationPromise :
     translate(wordWithContext, translator, languageCodes)
         .then((translation) => {
           // Google and Bing Translate frequently fail at contextual

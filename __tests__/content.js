@@ -3,7 +3,9 @@
 import * as fs from 'fs';
 
 import {parseCSV} from '../content/lib/readLangsDotCSV.js';
-import {removePunctuation} from '../content/lib/translateWord.js';
+import translateWord, {
+  removePunctuation,
+} from '../content/lib/translateWord.js';
 
 
 describe('getLang', () => {
@@ -70,6 +72,12 @@ describe('readLangsDotCSV', () => {
 
 
 describe('translateWord', () => {
+  global.chrome = {
+    runtime: {
+      sendMessage: () => Promise.resolve('test'),
+    },
+  };
+
   describe('removePunctuation', () => {
     it('removes punctuation', () => {
       expect(removePunctuation('word.')).toEqual('word');
@@ -81,6 +89,14 @@ describe('translateWord', () => {
     });
     it('leaves empty string empty', () => {
       expect(removePunctuation('')).toEqual('');
+    });
+  });
+
+  describe('translateWord', () => {
+    it('only sends one request for one word sentence', async () => {
+      const sendMessageSpy = jest.spyOn(chrome.runtime, 'sendMessage');
+      await translateWord(['Cześć!'], 0, 'bing', {from: 'pl', to: 'en'});
+      expect(sendMessageSpy).toHaveBeenCalledTimes(1);
     });
   });
 });
