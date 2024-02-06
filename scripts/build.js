@@ -164,7 +164,20 @@ function copyTesseractFiles(distDir) {
     const targetDir = path.join(distDir, 'content', dir);
     fs.mkdirSync(targetDir, {recursive: true});
     files.forEach((file) => {
-      fs.copyFileSync(file, path.join(targetDir, path.basename(file)));
+      const targetFile = path.join(targetDir, path.basename(file));
+      fs.copyFileSync(file, targetFile);
+      // `worker.min.js` includes a reference to remotely hosted code
+      // (tesseract.js-core files). Remotely hosted code is disallowed in the
+      // Chrome Web Store for MV3 extensions. The code never actually loads the
+      // remote resource, as it is included in the bundle, but the Chrome Web
+      // Store detects a violation anyway, likely using a simple search for a
+      // CDN URL in the source files. The remote URL is partially removed, to
+      // avoid rejection by the Chrome Web Store.
+      if (path.basename(file) === 'worker.min.js') {
+        fs.writeFileSync(targetFile, fs.readFileSync(targetFile).toString()
+            .replaceAll('https://cdn.jsdelivr.net', ''),
+        );
+      }
     });
   }
 }
@@ -283,6 +296,28 @@ async function buildIcon(icon, size, distDir) {
  * @return {object} - Esbuild options
  */
 function esbuildOptions(entryPoint, distDir, plugin) {
+  const outfile = path.join(distDir, entryPoint);
+
+  // Tesseract.js includes a reference to remotely hosted code
+  // (`worker.min.js`). Remotely hosted code is disallowed in the Chrome Web
+  // Store for MV3 extensions. The code never actually loads the remote
+  // resource, as it is included in the bundle, but the Chrome Web Store detects
+  // a violation anyway, likely using a simple search for a CDN URL in the
+  // source files. The remote URL is partially removed, to avoid rejection by
+  // the Chrome Web Store.
+  const removeRemoteCodeRefs = {
+    name: 'remove remote code references extension',
+    setup(build) {
+      build.onEnd((result) => {
+        if (result.errors.length === 0) {
+          fs.writeFileSync(outfile, fs.readFileSync(outfile)
+              .toString().replaceAll('https://cdn.jsdelivr.net', ''),
+          );
+        }
+      });
+    },
+  };
+
   return {
     entryPoints: [entryPoint],
     // Since the background script is an ES6 module, it doesn't have to be
@@ -291,10 +326,10 @@ function esbuildOptions(entryPoint, distDir, plugin) {
     // https://github.com/evanw/esbuild/issues/708. Once this issue has been
     // resolved, `bundle` can be set to `(background.type === 'module')`.
     bundle: true,
-    outfile: path.join(distDir, entryPoint),
+    outfile,
     minify: true,
     sourcemap: 'inline',
-    ...(plugin && {plugins: [plugin]}),
+    plugins: [removeRemoteCodeRefs, ...(plugin ? [plugin] : [])],
     logLevel: 'warning',
   };
 }
