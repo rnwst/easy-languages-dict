@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Easy Languages Dictionary",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "author": "R. N. West",
   "homepage_url": "https://github.com/rnwst/easy-languages-dict",
   "description": "Adds an interactive dictionary to subtitles of videos on the Easy Languages YouTube channels.",
