@@ -29,7 +29,7 @@ function getArgs() {
  */
 function exitIfIncorrectArgs() {
   const args = getArgs();
-  const browsers = ['chromium', 'firefox-desktop', 'firefox-android'];
+  const browsers = ['chromium', 'edge', 'firefox-desktop', 'firefox-android'];
   if (args.length === 0) return;
   if (args.length === 2 && args[0] === 'watch' && browsers.includes(args[1])) {
     return;
@@ -45,7 +45,11 @@ function exitIfIncorrectArgs() {
  * @return {string} - Browser-specific distributable directory
  */
 function browserDist(browser) {
-  return path.join(dist, browser === 'chromium' ? 'chromium' : 'firefox');
+  if (browser === 'edge') browser = 'chromium';
+  if (['firefox-desktop', 'firefox-android'].includes(browser)) {
+    browser = 'firefox';
+  }
+  return path.join(dist, browser);
 }
 
 
@@ -283,7 +287,7 @@ async function buildIcon(icon, size, distDir) {
     console.log(
         `Converting ${svgIcon} to PNG and writing to dist`);
     const png48 =
-        await svg2png.convert(optimizedSVGStr, {width: size, height: size});
+        await svg2png.convert(optimizedSVGStr, {width: 300, height: 300});
     fs.writeFileSync(path.join(distDir, icon), png48);
   }
 }
@@ -363,6 +367,8 @@ function zipDirectory(sourceDir, outPath) {
  * @param {boolean} zip - Whether to also zip the built extension
  */
 async function build(browser, zip=false) {
+  if (browser === 'edge') browser = 'chromium';
+
   const manifest = readManifest();
   const browserSpecificManifest = adaptManifestToBrowser(manifest, browser);
   writeManifest(browserSpecificManifest, browserDist(browser));
@@ -473,23 +479,32 @@ async function watch(browser) {
     // Firefox requires absolute paths.
     sourceDir: path.join(process.cwd(), browserDist(browser)),
     noReload: true,
-    target: browser,
+    target: browser === 'edge' ? 'chromium' : browser,
 
-    ...(browser === 'chromium' &&
-      {chromiumProfile: 'browser-profiles/chromium'}),
+    // Chromium and MS Edge specific options.
+    ...(['chromium', 'edge'].includes(browser) && {
+      chromiumProfile: `browser-profiles/${browser}`,
+    }),
 
+    // MS Edge specific option.
+    ...(browser === 'edge' &&
+      {chromiumBinary: '/usr/bin/microsoft-edge-stable'}),
+
+    // Firefox specific settings.
     ...(browser === 'firefox-desktop' && {
       // Firefox requires an absolute paths.
       firefoxProfile: path.join(process.cwd(), 'browser-profiles/firefox'),
       firefox: 'deved',
     }),
 
-    ...(['chromium', 'firefox-desktop'].includes(browser) && {
+    // Options for all desktop browsers.
+    ...(['chromium', 'edge', 'firefox-desktop'].includes(browser) && {
       keepProfileChanges: true,
       profileCreateIfMissing: true,
       startUrl: 'https://www.youtube.com/watch?v=9G9liRZvi5E',
     }),
 
+    // Options for Firefox for Android.
     ...(browser === 'firefox-android' && {
       adbDevice: (await adbUtils.listADBDevices())[0],
       firefoxApk: 'org.mozilla.fenix',

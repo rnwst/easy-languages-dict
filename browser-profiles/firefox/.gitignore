@@ -1,3 +1,0 @@
-# This .gitignore is needed since empty directories can't be added in git.
-*
-!.gitignore

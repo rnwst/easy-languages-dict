@@ -7,6 +7,7 @@
     "lint-web-ext": "npm run --silent build && web-ext lint --source-dir dist/firefox",
     "start": "npm run --silent start-firefox-desktop",
     "start-chromium": "node scripts/build watch chromium",
+    "start-edge": "node scripts/build watch edge",
     "start-firefox-desktop": "node scripts/build watch firefox-desktop",
     "start-firefox-android": "node scripts/build watch firefox-android",
     "test": "jest --verbose",
