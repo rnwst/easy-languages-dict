@@ -4,17 +4,21 @@
 <h1 align="center">Easy Languages Dictionary</h1>
 <div align="center">
   <a href="https://chromewebstore.google.com/detail/cclabikdbgmiadcihncalbdchliaambo"><img src='./README-files/chrome-web-store.svg' height='60px' width='225px'/></a>
-  <a href="https://chromewebstore.google.com/detail/cclabikdbgmiadcihncalbdchliaambo"><img src='./README-files/edge-web-store.svg' height='60px' width='225px'/></a>
-  <a href="https://addons.mozilla.org/en-US/firefox/addon/easy-languages-dictionary/"><img src='./README-files/get-the-addon.svg' height='60px' width='200px'/></a>
+  <a href="https://microsoftedge.microsoft.com/addons/detail/easy-languages-dictionary/polkponobkkpkdjibgiomifmcokdihjl"><img src='./README-files/get-it-from-ms.svg' height='60px' width='190px'/></a>
+  <a href="https://addons.mozilla.org/en-US/firefox/addon/easy-languages-dictionary/"><img src='./README-files/get-the-addon.svg' height='60px' width='195px'/></a>
 </div>
 <div>&nbsp;</div>
 <div align="center">
   <img src="https://img.shields.io/chrome-web-store/v/cclabikdbgmiadcihncalbdchliaambo" />
-  <img src="https://img.shields.io/chrome-web-store/stars/cclabikdbgmiadcihncalbdchliaambo" />
+  <img src="https://img.shields.io/chrome-web-store/rating/cclabikdbgmiadcihncalbdchliaambo" />
   <img src="https://img.shields.io/chrome-web-store/users/cclabikdbgmiadcihncalbdchliaambo" />
   <br>
+  <img src="https://img.shields.io/badge/dynamic/json?label=edge%20add-on&prefix=v&query=%24.version&url=https%3A%2F%2Fmicrosoftedge.microsoft.com%2Faddons%2Fgetproductdetailsbycrxid%2Fpolkponobkkpkdjibgiomifmcokdihjl" />
+  <img src="https://img.shields.io/badge/dynamic/json?label=rating&suffix=/5&query=%24.averageRating&url=https%3A%2F%2Fmicrosoftedge.microsoft.com%2Faddons%2Fgetproductdetailsbycrxid%2Fpolkponobkkpkdjibgiomifmcokdihjl" />
+  <img src="https://img.shields.io/badge/dynamic/json?label=users&query=%24.activeInstallCount&url=https%3A%2F%2Fmicrosoftedge.microsoft.com%2Faddons%2Fgetproductdetailsbycrxid%2Fpolkponobkkpkdjibgiomifmcokdihjl" />
+  <br>
   <img src="https://img.shields.io/amo/v/easy-languages-dictionary" />
-  <img src="https://img.shields.io/amo/stars/easy-languages-dictionary" />
+  <img src="https://img.shields.io/amo/rating/easy-languages-dictionary" />
   <img src="https://img.shields.io/amo/users/easy-languages-dictionary" />
 </div>
 <div>&nbsp;</div>
@@ -28,7 +32,7 @@ While I am unaffiliated with the Easy Languages franchise and this extension is 
 
 ### Supported browsers
 
-The extension is available for [Firefox](https://addons.mozilla.org/en-US/firefox/addon/easy-languages-dictionary/) and all Chromium-based browsers that support extensions ([Chrome](https://chromewebstore.google.com/detail/cclabikdbgmiadcihncalbdchliaambo), [MS Edge](https://chromewebstore.google.com/detail/cclabikdbgmiadcihncalbdchliaambo), [Opera](https://chromewebstore.google.com/detail/cclabikdbgmiadcihncalbdchliaambo), ...).
+The extension is available for [Firefox](https://addons.mozilla.org/en-US/firefox/addon/easy-languages-dictionary/) and all Chromium-based browsers that support extensions ([Chrome](https://chromewebstore.google.com/detail/cclabikdbgmiadcihncalbdchliaambo), [MS Edge](https://microsoftedge.microsoft.com/addons/detail/easy-languages-dictionary/polkponobkkpkdjibgiomifmcokdihjl), [Opera](https://chromewebstore.google.com/detail/cclabikdbgmiadcihncalbdchliaambo), ...).
 
 The extension is not available for Safari, for the following reasons:
 - Publishing a Safari extension requires enrolling in the 'Apple Developer Program', at a cost of 99 $/year, which I have very little appetite for.
