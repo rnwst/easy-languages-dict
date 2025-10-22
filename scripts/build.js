@@ -286,9 +286,9 @@ async function buildIcon(icon, size, distDir) {
     // https://bugs.chromium.org/p/chromium/issues/detail?id=29683.
     console.log(
         `Converting ${svgIcon} to PNG and writing to dist`);
-    const png48 =
-        await svg2png.convert(optimizedSVGStr, {width: 300, height: 300});
-    fs.writeFileSync(path.join(distDir, icon), png48);
+    const png =
+        await svg2png.convert(optimizedSVGStr, {width: size, height: size});
+    fs.writeFileSync(path.join(distDir, icon), png);
   }
 }
 
