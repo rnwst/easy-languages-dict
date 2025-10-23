@@ -100,9 +100,7 @@ export function takeScreenshots(video, subtitlePosition) {
 
   // This CSS filter is used to produce black text on white background, which
   // gives best results when performing the OCR.
-  const ocrFilter =
-      'brightness(60%) contrast(4) invert() grayscale() brightness(55%) ' +
-      'contrast(10)';
+  const ocrFilter = 'brightness(60%) contrast(99) grayscale() invert()';
 
   // This CSS filter is used to produce a mask-image for the
   // underline-container, to mask out underlines around descenders. It also
