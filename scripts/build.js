@@ -268,7 +268,7 @@ async function buildIcon(icon, size, distDir) {
   if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, {recursive: true});
 
   if (fileEnding === 'svg') {
-    console.log(`Optimizng ${icon} and writing to dist`);
+    console.log(`Optimizing ${icon} and writing to dist`);
     fs.writeFileSync(path.join(distDir, icon), optimizedSVGStr);
   } else {
     // Chromium doesn't support SVGs unfortunately. See
