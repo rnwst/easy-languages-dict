@@ -1,3 +1,4 @@
+// @ts-check
 'use strict';
 
 import {
@@ -38,7 +39,7 @@ import avoidBrowserBugs from './lib/avoidBrowserBugs.js';
 // Thus, we need to execute the main function once at the beginning, and
 // subsequently everytime the user navigates to a new video.
 let videoId = extractVideoId(document.URL);
-videoId && main(videoId);
+videoId && main();
 chrome.runtime.onMessage.addListener((message) => {
   // When loading (not navigating to) a URL which corresponds to a playlist,
   // YouTube pushes a history state, even though no page navigation is
@@ -54,7 +55,7 @@ chrome.runtime.onMessage.addListener((message) => {
     // main function.
     document.dispatchEvent(new CustomEvent('videoId-changed'));
     // If a new video was navigated to, launch main function.
-    if (videoId) main(videoId);
+    if (videoId) main();
   }
 });
 
@@ -120,24 +121,37 @@ async function main() {
     hideBehindActivePlayerControls(pointerEnterableContainer);
   }
 
-  translationBubbleContainer.addEventListener('translation-request', (evt) => {
-    if (document.contains(translationBubbleContainer)) {
-      removeTranslationBubbles();
-      unilluminateUnderlines();
-      const {words, wordIndex, screenshotDims} = evt.detail;
-      illuminateUnderline(wordIndex);
-      const bubble = createTranslationBubble(words[wordIndex], screenshotDims);
-      const sentence = evt.detail.words.map((word) => word.text);
-      translateWord(
-          sentence,
-          wordIndex,
-          lang,
-      )
-          .then((translation) => bubble.innerHTML = translation)
-          .catch((error) => bubble.innerHTML =
-            `<div class="error">${error.name}: ${error.message}</div>`);
+  translationBubbleContainer.addEventListener(
+    'translation-request',
+    /** @param{CustomEvent} evt */
+    (evt) => {
+      if (document.contains(translationBubbleContainer)) {
+        removeTranslationBubbles();
+        unilluminateUnderlines();
+        const {words, wordIndex, screenshotDims} = evt.detail;
+        illuminateUnderline(wordIndex);
+        const bubble = createTranslationBubble(words[wordIndex], screenshotDims);
+        const sentence = evt.detail.words.map(
+          /** @param{Object} word */
+          (word) => word.text
+        );
+        translateWord(
+            sentence,
+            wordIndex,
+            lang,
+        )
+            .then(
+              /** @param{string} translation */
+              (translation) => bubble.innerHTML = translation
+            )
+            .catch(
+              /** @param{Error} error */
+              (error) => bubble.innerHTML =
+              `<div class="error">${error.name}: ${error.message}</div>`
+            );
+      }
     }
-  });
+  );
 
   if (onDesktop()) {
     avoidBrowserBugs();
@@ -165,8 +179,10 @@ async function main() {
         previouslyOCRedText = data.text;
 
         const words = (data.confidence > 65) ?
-            data.words.filter((word) => isTranslatable(word.text)) :
-            [];
+            data.words.filter(
+              /** @param{Object} word */
+              (word) => isTranslatable(word.text)
+            ) : [];
 
         const screenshotDims = await getImageDimensions(textImage);
 

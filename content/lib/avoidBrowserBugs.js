@@ -1,3 +1,4 @@
+//@ts-check
 'use strict';
 
 import {waitForElt, getMoviePlayer} from './utils.js';

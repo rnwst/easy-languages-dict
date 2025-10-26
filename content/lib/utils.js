@@ -1,3 +1,4 @@
+//@ts-check
 'use strict';
 
 import {rewind, fastfwd} from './seek.js';
@@ -7,7 +8,7 @@ import {rewind, fastfwd} from './seek.js';
  * Return a promise which resolves after the timeout. This function enables
  * usage of the following code: `await timeout(timeinMS)`.
  * @param {number} timeInMS - Time in milliseconds after which promise resolves
- * @return {promise} - Promise which resolves after timeout.
+ * @return {Promise<void>} - Promise which resolves after timeout.
  */
 export function timeout(timeInMS) {
   return new Promise((resolve) => {
@@ -40,7 +41,7 @@ export function onDesktop() {
  * Extract YouTube Video Id from video URL. Example: The video Id of
  * 'https://www.youtube.com/watch?v=x5yPyrpeWjo' is 'x5yPyrpeWjo'.
  * @param {string} videoURL - Video URL
- * @return {string} - Video Id
+ * @return {string | null} - Video Id
  */
 export function extractVideoId(videoURL) {
   return new URL(videoURL).searchParams.get('v');
@@ -59,7 +60,7 @@ export function waitForElt(selector) {
     const elt = document.querySelector(selector);
     if (elt) resolve(elt);
     else {
-      new MutationObserver((mutations, observer) => {
+      new MutationObserver((_, observer) => {
         const elt = document.querySelector(selector);
         if (elt) {
           observer.disconnect();
@@ -118,7 +119,11 @@ export function createElement(_class) {
  */
 export function easyLangsDictElts(selector) {
   const elements = document.getElementsByClassName('easy-languages-dict');
-  return [].filter.call(elements, (elt) => elt.matches(selector));
+  return [].filter.call(
+    elements,
+    /** @param{HTMLElement} elt */
+    (elt) => elt.matches(selector)
+  );
 }
 
 
@@ -133,9 +138,9 @@ function keyEventHandler(event) {
   const fastfwdKeys = ['ArrowRight', 'KeyL'];
   if ((rewindKeys.includes(key) || fastfwdKeys.includes(key)) &&
       // Don't intercept keys when typing comment.
-      !document.activeElement.getAttribute('contenteditable') &&
+      !document.activeElement?.getAttribute('contenteditable') &&
       // Don't intercept keys when typing in search box.
-      document.activeElement.tagName != 'INPUT') {
+      document.activeElement?.tagName != 'INPUT') {
     event.stopPropagation();
     // Prevent page from scrolling horizontally if arrow keys are pressed.
     event.preventDefault();
@@ -182,9 +187,11 @@ hideBehindActivePlayerControls(pointerEnterableContainer) {
       // Since the pointer-enterable container was inserted before the player
       // controls element, resetting its z-index to 'auto' puts it behind the
       // player controls.
-      if (mutation.target.getAttribute('id') === 'player-control-overlay') {
-        pointerEnterableContainer.style.zIndex =
-            mutation.target.classList.contains('fadein') ? 'auto' : '';
+      if (mutation.target instanceof Element) {
+        if (mutation.target.getAttribute('id') === 'player-control-overlay') {
+          pointerEnterableContainer.style.zIndex =
+              mutation.target.classList.contains('fadein') ? 'auto' : '';
+        }
       }
     });
   });
@@ -211,8 +218,8 @@ hideBehindActivePlayerControls(pointerEnterableContainer) {
 
 /**
  * Wait for video to be playable.
- * @param {object} video - HTML video element
- * @return {promise} - Whether video is ready to be played
+ * @param {Object} video - HTML video element
+ * @return {Promise<void>} - Resolves when video is ready to be played
  */
 export function waitForPlayable(video) {
   return new Promise((resolve) => {
@@ -233,7 +240,9 @@ export function waitForPlayable(video) {
  * @return {boolean} - Whether word can be translated
  */
 export function isTranslatable(wordText) {
-  const isNumeric = (str) => !isNaN(str);
+  const isNumeric =
+    /** @param {string} str */
+    (str) => !isNaN(Number(str));
   return !isNumeric(wordText) && wordText != '-';
 }
 
@@ -262,7 +271,7 @@ export function getImageDimensions(dataURL) {
  * @param {promise} promise - Promise to be checked
  * @return {promise} - Resolves to whether promise is resolved
  */
-export function isPromiseResolved(promise) {
+export async function isPromiseResolved(promise) {
   const notAPromise = 'unlikely value';
   return Promise.race([promise, notAPromise])
       .then((value) => (value !== notAPromise));

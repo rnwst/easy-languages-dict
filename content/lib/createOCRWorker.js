@@ -1,6 +1,7 @@
+//@ts-check
 'use strict';
 
-import * as tesseract from 'tesseract.js';
+import tesseract from 'tesseract.js';
 
 
 /**

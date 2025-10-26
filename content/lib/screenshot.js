@@ -1,3 +1,4 @@
+//@ts-check
 'use strict';
 
 import {createElement} from './utils.js';
@@ -40,7 +41,7 @@ export function createScreenshotOverlay(video, subtitlePosition, _class) {
 
   // Element needs to be repositioned and resized when the movie player is
   // resized.
-  const observer = new MutationObserver((entries, observer) => {
+  const observer = new MutationObserver((_, __) => {
     positionOverlay();
     setFontSize();
   });
@@ -90,7 +91,7 @@ export function takeScreenshots(video, subtitlePosition) {
   // Note that `drawImage(video, ...)` doesn't currently work on Firefox for
   // Android, see https://bugzilla.mozilla.org/show_bug.cgi?id=1872508. Until
   // this is fixed, the extension won't work on Android.
-  bufferCanvasCtx.drawImage(
+  bufferCanvasCtx?.drawImage(
       video,
       0,
       -subtitlePosition.top * video.videoHeight,
@@ -109,12 +110,16 @@ export function takeScreenshots(video, subtitlePosition) {
       'brightness(60%) contrast(9999) grayscale() invert() blur(0.15em) ' +
       'brightness(55%) contrast(5) brightness(2)';
 
-  const getScreenshotBase64 = (filter) => {
-    canvasCtx.filter = filter;
-    canvasCtx.drawImage(bufferCanvas, 0, 0);
-    // PNG is the only format that browsers must support.
-    return canvas.toDataURL('image/png');
-  };
+  const getScreenshotBase64 =
+    /** @param{string} filter */
+    (filter) => {
+      if (canvasCtx) {
+        canvasCtx.filter = filter;
+        canvasCtx.drawImage(bufferCanvas, 0, 0);
+        // PNG is the only format that browsers must support.
+      }
+      return canvas.toDataURL('image/png');
+    };
 
   const textImage = getScreenshotBase64(ocrFilter);
   const descenderMask = getScreenshotBase64(descenderMaskFilter);

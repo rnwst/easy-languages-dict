@@ -1,3 +1,4 @@
+//@ts-check
 'use strict';
 
 /**
@@ -16,7 +17,7 @@ let authDataPromise;
 
 /**
  * Obtain authentication data for the Bing Translate API.
- * @return {object} - Authentication data
+ * @return {Promise<Object>} - Authentication data
  */
 async function fetchAuthData() {
   const authData = {};
@@ -25,10 +26,10 @@ async function fetchAuthData() {
   const translatePage = await fetch(url).then((response) => response.text());
   // What all this authorisation data means is anyone's guess. We're just trying
   // to match the requests that are posted when visiting bing.com/translator.
-  authData.ig = translatePage.match(/IG:"(.*?)"/)[1];
-  authData.iid = translatePage.match(/data-iid="(.*?)"/)[1];
+  authData.ig = translatePage.match(/IG:"(.*?)"/)?.[1] ?? '';
+  authData.iid = translatePage.match(/data-iid="(.*?)"/)?.[1] ?? '';
   const abusePreventionHelper = JSON.parse(
-      translatePage.match(/params_AbusePreventionHelper = (.*?);/)[1]);
+      translatePage.match(/params_AbusePreventionHelper = (.*?);/)?.[1] ?? '{}');
   authData.token = abusePreventionHelper[1];
   authData.key = abusePreventionHelper[0];
 
@@ -40,7 +41,7 @@ async function fetchAuthData() {
  * Obtain authentication data for the Bing Translate API from storage if it has
  * previously been stored, otherwise fetch authentication data and store it.
  * @param {boolean} refresh - Whether to fetch new authentication data
- * @return {object} - Authentication data
+ * @return {Promise<Object>} - Authentication data
  */
 async function getAuthData(refresh=false) {
   const authDataStorageKey = 'bingTranslateAuthData';
@@ -56,7 +57,7 @@ async function getAuthData(refresh=false) {
 /**
  * Send translation request to Bing Translate API and parse response.
  * @param {string} text - Text to be translated
- * @param {object} options - Translation options (languages)
+ * @param {Record<string, string>} options - Translation options (languages)
  */
 async function requestTranslation(text, options) {
   const authData = await authDataPromise;
@@ -67,7 +68,7 @@ async function requestTranslation(text, options) {
     to: options.to,
     token: authData.token,
     key: authData.key,
-    tryFetchingGenderDebiasedTranslations: true,
+    tryFetchingGenderDebiasedTranslations: 'true',
   };
 
   const response = await fetch(
@@ -104,8 +105,8 @@ async function requestTranslation(text, options) {
 /**
  * Translate text with the Bing Translate API.
  * @param {string} text - Text to be translated
- * @param {object} options - Translation options (languages)
- * @return {object} - Translation promise resolving to translated string
+ * @param {Object} options - Translation options (languages)
+ * @return {Promise<Object>} - Translation promise resolving to translated string
  */
 export default async function bingTranslate(text, options) {
   if (!authDataPromise) authDataPromise = getAuthData();

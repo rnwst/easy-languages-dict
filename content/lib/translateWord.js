@@ -1,3 +1,4 @@
+// @ts-check
 'use strict';
 
 /**
@@ -42,6 +43,7 @@ export function parseResponse(response) {
     console.log(response);
     const error = new Error(response.message);
     error.name = response.name;
+    // @ts-ignore
     error.code = response.code;
     throw error;
   }
@@ -51,7 +53,7 @@ export function parseResponse(response) {
 /**
  * Return word wrapped in `<b>` tags.
  * @param {string} translation - Received translation
- * @return {string} - Word wrapped in `<b>` tags
+ * @return {string | undefined} - Word wrapped in `<b>` tags
  */
 export function wordInTags(translation) {
   return translation.match(/<b>(?<word>.*?)<\/b>/)?.groups?.word;
@@ -66,7 +68,8 @@ export function wordInTags(translation) {
  * @return {string} - Word without punctuation
  */
 export function removePunctuation(wordWithPunctuation) {
-  return wordWithPunctuation?.match(/^(?<word>.*?)[.,:;?!]?$/).groups.word;
+  return wordWithPunctuation
+      ?.match(/^(?<word>.*?)[.,:;?!]?$/)?.groups?.word ?? wordWithPunctuation;
 }
 
 
@@ -100,7 +103,7 @@ async function translate(text, translator, langCode) {
  * be translated
  * @param {number} wordIndex - Array index of word to be translated
  * @param {object} lang - Language object
- * @return {object} - Promise resolving to translated word
+ * @return {Promise<string>} - Promise resolving to translated word
  */
 export default async function translateWord(sentence, wordIndex, lang) {
   const word = escapeHTML(sentence[wordIndex]);
@@ -129,8 +132,8 @@ export default async function translateWord(sentence, wordIndex, lang) {
           // translation. Google often returns a translation which doesn't
           // contain any `<b>` tags, and Bing often returns a translation
           // where the `<b>` tags are empty.
-          const translatedWord = removePunctuation(wordInTags(translation));
-          if (!translatedWord || (translatedWord === '')) {
+          const translatedWord = removePunctuation(wordInTags(translation) ?? '');
+          if (translatedWord === '') {
             return '-';
           } else {
             // To prevent XSS attacks if the server returns malicious content,

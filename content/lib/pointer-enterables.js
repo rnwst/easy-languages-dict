@@ -1,3 +1,4 @@
+//@ts-check
 'use strict';
 
 import {createElement, easyLangsDictElts} from './utils.js';

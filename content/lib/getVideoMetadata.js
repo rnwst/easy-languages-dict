@@ -1,3 +1,4 @@
+// @ts-check
 'use strict';
 
 import {KNOWN_INNERTUBE_API_KEY, KNOWN_WEB_CLIENT_VERSION}
@@ -71,19 +72,12 @@ export function getWebClientVersion() {
 
 
 /**
- * YouTube web client version to be included in Innertube API requests.
- * @type {string}
- */
-const WEB_CLIENT_VERSION = getWebClientVersion();
-
-
-/**
  * Fetch metadata for given YouTube video.
  * @param {string} videoId - YT video Id
  * @param {string} webClientVersion - YT web client version
- * @return {object} - Response promise
+ * @return {Promise<Response>} Response promise
  */
-export function fetchMetadata(videoId) {
+export function fetchMetadata(videoId, webClientVersion) {
   // need to retry in case of poor connection...
   return fetch(
       `https://${onMobile() ? 'm' : 'www'}.youtube.com/youtubei/v1/player?` +
@@ -94,7 +88,7 @@ export function fetchMetadata(videoId) {
           'context': {
             'client': {
               'clientName': 'WEB',
-              'clientVersion': WEB_CLIENT_VERSION,
+              'clientVersion': webClientVersion,
             },
             'request': {
               'useSsl': true,
@@ -111,12 +105,30 @@ export function fetchMetadata(videoId) {
  * Extract channel handle from channel URL. Example: The channel handle of
  * 'https://www.youtube.com/@EasyPolish' is 'EasyPolish'.
  * @param {string} channelURL - Channel URL
- * @return {string} - Channel handle
+ * @return {string | undefined} - Channel handle
  */
 export function extractChannelHandle(channelURL) {
   return new URL(channelURL).pathname
       ?.match(/\/@(?<handle>[a-zA-Z0-9_\-.]+)/)?.groups?.handle;
 }
+
+
+/**
+ * @param {string} videoId
+ * @param {string} webClientVersion
+ * @return {Promise<{ title: string, channelURL: string, publicationDate: Date }>}
+ */
+async function fetchVideoMetadata(videoId, webClientVersion) {
+  const response =
+      await fetchMetadata(videoId, webClientVersion);
+  const responseData = await response.json();
+  const title = responseData.videoDetails?.title;
+  const channelURL =
+      responseData.microformat?.playerMicroformatRenderer?.ownerProfileUrl;
+  const publicationDate = new Date(
+      responseData.microformat?.playerMicroformatRenderer?.publishDate);
+  return {title, channelURL, publicationDate};
+};
 
 
 /**
@@ -135,22 +147,12 @@ export function extractChannelHandle(channelURL) {
  * due to redundant data transmission, but until `filterResponseData` is
  * implemented in Chromium, there is no good alternative.
  * @param {string} videoId - YT Video Id
- * @return {object} - Video Metadata
+ * @return {Promise<object>} - Video Metadata
  */
 export default async function getVideoMetadata(videoId) {
-  let title; let channelURL; let publicationDate;
-  const fetchTitleAndChannelURL = async (webClientVersion) => {
-    const response =
-        await fetchMetadata(videoId);
-    const responseData = await response.json();
-    title = responseData.videoDetails?.title;
-    channelURL =
-        responseData.microformat?.playerMicroformatRenderer?.ownerProfileUrl;
-    publicationDate = new Date(
-        responseData.microformat?.playerMicroformatRenderer?.publishDate);
-  };
-
-  await fetchTitleAndChannelURL(getWebClientVersion());
+  const WEB_CLIENT_VERSION = getWebClientVersion();
+  let {title, channelURL, publicationDate} =
+      await fetchVideoMetadata(videoId, WEB_CLIENT_VERSION);
   // Fetching the title and the channel URL could be unsuccessful due to an API
   // change and a corresponding YT web client change. In that case, passing an
   // old web client version might still work for a period of time (which will
@@ -163,7 +165,7 @@ export default async function getVideoMetadata(videoId) {
         'Easy Languages Dictionary: Unable to obtain channel and video title ' +
         `for videoId '${videoId}' with new web client version! ` +
         'Trying once more with old web client version.');
-    await fetchTitleAndChannelURL(KNOWN_WEB_CLIENT_VERSION);
+    await fetchVideoMetadata(videoId, KNOWN_WEB_CLIENT_VERSION);
   }
 
   const channelHandle = extractChannelHandle(channelURL);

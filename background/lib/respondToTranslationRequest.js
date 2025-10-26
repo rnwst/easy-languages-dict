@@ -1,3 +1,4 @@
+// @ts-check
 'use strict';
 
 import googleTranslate from './translators/googleTranslate.js';
@@ -32,7 +33,7 @@ export function genDictName(translator, langCodes) {
 function getTranslatorFunction(translator) {
   if (translator === 'bing') return bingTranslate;
   if (translator === 'google') return googleTranslate;
-  if (translator === 'deepL') return deepL;
+  return deepL;
 }
 
 
@@ -40,18 +41,21 @@ function getTranslatorFunction(translator) {
  * Function registered as a listener in background script. Responds to
  * translation requests from content script.
  * @param {object} message - Request object received from content script
- * @param {object} sender - Sender object - not used
+ * @param {object} _ - Sender object - not used
  * @param {function} sendResponse - Function to respond to content script
  * @return {boolean} - `true`, used to keep `sendResponse` function alive
  */
 export default function respondToTranslationRequest(
-    message, sender, sendResponse) {
+    message, _, sendResponse) {
   const text = message.text;
   const translate = getTranslatorFunction(message.translator);
 
   const dictName = genDictName(message.translator, message.langCodes);
   (dictName in dicts) || (dicts[dictName] = {});
 
+  /**
+   * @param{Promise<string>} translationPromise
+   */
   const sendTranslation = (translationPromise) => {
     // Sending a promise synchronously as a response results in the content
     // script receiving an empty object. This is because `sendResponse` only
@@ -65,7 +69,7 @@ export default function respondToTranslationRequest(
         .then((translation) => {
           sendResponse({
             type: 'translation',
-            translation: translation,
+            translation,
           });
         })
         .catch((error) => {

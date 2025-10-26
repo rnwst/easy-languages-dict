@@ -1,3 +1,6 @@
+//@ts-check
+'use strict';
+
 /**
  * Get data from local storage.
  * Usage of `browser.storage.local` is not possible, because Chromium doesn't
@@ -10,7 +13,7 @@
  * need to be used here, so that they work on the `chrome` object both in
  * Firefox MV2 as well as Chromium MV3.
  * @param {string} key - Key
- * @return {object} - Data
+ * @return {Promise<object>} - Data
  */
 export async function getStoredData(key) {
   return new Promise((resolve) => {
@@ -27,17 +30,17 @@ export async function getStoredData(key) {
  */
 export async function storeData(key, data) {
   return new Promise((resolve) => {
-    chrome.storage.local.set({[key]: data}, resolve());
+    chrome.storage.local.set({[key]: data}, () => resolve(true));
   });
 }
 
 
 /**
  * Check if a promise is resolved or not.
- * @param {promise} promise - Promise to be checked
- * @return {promise} - Resolves to whether promise is resolved
+ * @param {Promise} promise - Promise to be checked
+ * @return {Promise} - Resolves to whether promise is resolved
  */
-export function isPromiseResolved(promise) {
+export async function isPromiseResolved(promise) {
   const notAPromise = 'unlikely value';
   return Promise.race([promise, notAPromise])
       .then((value) => (value !== notAPromise));

@@ -1,3 +1,6 @@
+//@ts-check
+'use strict';
+
 /**
  * Translate text using the DeepL API.
  * Inspired by the DeepL browser extension.

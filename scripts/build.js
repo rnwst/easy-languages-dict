@@ -1,3 +1,4 @@
+//@ts-check
 'use strict';
 
 import esbuild from 'esbuild';
@@ -419,27 +420,29 @@ async function build(browser, zip=false) {
  * - reports the same event more than once,
  * - incorrectly reports changes as a 'rename', and
  * - as a result doesn't report any future file changes.
- * To fix this, a custom function is provided, which checks if the underlying
- * file has actually changed, and then instantiates a new file watcher to
- * continue keeping track of any changes.
- * @param {string} file - File to be watched
- * @param {function} callback - Function to call if file changes
- * @return {object} - File watcher context which can be terminated later
+ *
+ * This custom file watcher context checks if the underlying file has actually
+ * changed, and then instantiates a new file watcher to continue keeping track
+ * of any changes.
  */
 class FileWatcherContext {
-  /* eslint-disable require-jsdoc */
   #file;
   #callback;
   #abortController;
   #fileHash;
   #fileWatcher;
 
+  /**
+   * @param {string} file - File to be watched
+   * @param {function} callback - Function to call if file changes
+   */
   constructor(file, callback) {
     this.#file = file;
     this.#callback = callback;
     this.#updateFileWatcher();
   }
 
+  /* eslint-disable require-jsdoc */
   dispose() {
     this.#abortController?.abort();
   }

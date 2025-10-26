@@ -1,3 +1,4 @@
+// @ts-check
 'use strict';
 
 /**
@@ -31,7 +32,7 @@ export function parseCSV(csvStr) {
 
 /**
  * Return information about supported languages and their respective codes.
- * @return {object} - Table row array containing objects with table header keys
+ * @return {Promise<Array<Object>>} - Table row array containing objects with table header keys
  */
 export default async function readLangsDotCSV() {
   const url = chrome.runtime.getURL('langs.csv');

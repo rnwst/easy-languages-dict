@@ -1,3 +1,4 @@
+//@ts-check
 'use strict';
 
 import {easyLangsDictElts, createElement} from './utils.js';
@@ -20,7 +21,7 @@ export function createUnderlines(words, screenshotDims, descenderMask) {
       `url(${descenderMask})`,
   );
 
-  words.forEach((word, index) => {
+  words.forEach((word, _) => {
     const underline = createElement('underline');
 
     underline.style.left = `${100 * word.baseline.x0 / screenshotDims.width}%`;
