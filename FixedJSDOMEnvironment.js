@@ -6,8 +6,6 @@ This file defines a new test environment, with `fetch` defined.
 Adapted from https://github.com/jsdom/jsdom/issues/1724#issuecomment-1446858041.
 */
 
-/* eslint-disable require-jsdoc */
-
 import {TestEnvironment} from 'jest-environment-jsdom';
 
 // https://github.com/facebook/jest/blob/v29.4.3/website/versioned_docs/version-29.4/Configuration.md#testenvironment-string

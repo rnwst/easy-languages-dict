@@ -21,7 +21,7 @@ export function createUnderlines(words, screenshotDims, descenderMask) {
       `url(${descenderMask})`,
   );
 
-  words.forEach((word, _) => {
+  words.forEach((word) => {
     const underline = createElement('underline');
 
     underline.style.left = `${100 * word.baseline.x0 / screenshotDims.width}%`;

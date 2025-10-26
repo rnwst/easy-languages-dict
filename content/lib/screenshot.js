@@ -41,7 +41,7 @@ export function createScreenshotOverlay(video, subtitlePosition, _class) {
 
   // Element needs to be repositioned and resized when the movie player is
   // resized.
-  const observer = new MutationObserver((_, __) => {
+  const observer = new MutationObserver(() => {
     positionOverlay();
     setFontSize();
   });

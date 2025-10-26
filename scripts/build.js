@@ -10,7 +10,8 @@ import webExt from 'web-ext';
 // eslint-disable-next-line import/no-unresolved
 import * as adbUtils from 'web-ext/util/adb';
 import {optimize as optimizeSVG} from 'svgo';
-import svg2png from 'convert-svg-to-png';
+import {convert as svg2png} from 'convert-svg-to-png';
+import {executablePath} from 'puppeteer';
 import archiver from 'archiver';
 
 
@@ -261,20 +262,7 @@ async function buildIcon(icon, size, distDir) {
   const svgIcon = icon.replace(regex, '.svg');
 
   const svgStr = fs.readFileSync(svgIcon);
-  const optimizedSVGStr = optimizeSVG(svgStr, {
-    plugins: [
-      {
-        name: 'preset-default',
-        params: {
-          overrides: {
-            // Firefox requires the viewBox attribute:
-            // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/icons#svg
-            removeViewBox: false,
-          },
-        },
-      },
-    ],
-  }).data;
+  const optimizedSVGStr = optimizeSVG(svgStr).data;
 
   const targetDir = path.join(distDir, path.dirname(icon));
   if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, {recursive: true});
@@ -288,7 +276,11 @@ async function buildIcon(icon, size, distDir) {
     console.log(
         `Converting ${svgIcon} to PNG and writing to dist`);
     const png =
-        await svg2png.convert(optimizedSVGStr, {width: size, height: size});
+        await svg2png(optimizedSVGStr, {
+          launch: { executablePath },
+          width: size,
+          height: size
+        });
     fs.writeFileSync(path.join(distDir, icon), png);
   }
 }
@@ -430,7 +422,6 @@ class FileWatcherContext {
   #callback;
   #abortController;
   #fileHash;
-  #fileWatcher;
 
   /**
    * @param {string} file - File to be watched
@@ -442,7 +433,6 @@ class FileWatcherContext {
     this.#updateFileWatcher();
   }
 
-  /* eslint-disable require-jsdoc */
   dispose() {
     this.#abortController?.abort();
   }
@@ -451,7 +441,7 @@ class FileWatcherContext {
     this.#fileHash = hashFile(this.#file);
     this.dispose();
     this.#abortController = new AbortController();
-    this.#fileWatcher = fs.watch(
+    fs.watch(
         this.#file,
         {signal: this.#abortController.signal},
         this.#fileWatcherCallback.bind(this),
@@ -467,7 +457,6 @@ class FileWatcherContext {
       }
     }
   }
-  /* eslint-enable require-jsdoc */
 }
 
 
