@@ -1,16 +1,11 @@
-//@ts-check
-'use strict';
-
-import {rewind, fastfwd} from './seek.js';
+import {rewind, fastfwd} from './seek';
 
 
 /**
  * Return a promise which resolves after the timeout. This function enables
  * usage of the following code: `await timeout(timeinMS)`.
- * @param {number} timeInMS - Time in milliseconds after which promise resolves
- * @return {Promise<void>} - Promise which resolves after timeout.
  */
-export function timeout(timeInMS) {
+export function timeout(timeInMS: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve();
@@ -21,18 +16,16 @@ export function timeout(timeInMS) {
 
 /**
  * Determine whether YouTube page is the mobile version.
- * @return {boolean} - Whether YT page is mobile version
  */
-export function onMobile() {
+export function onMobile(): boolean {
   return new URL(document.URL).host.startsWith('m');
 }
 
 
 /**
  * Determine whether YouTube page is the desktop version.
- * @return {boolean} - Whether YT page is desktop version
  */
-export function onDesktop() {
+export function onDesktop(): boolean {
   return !onMobile();
 }
 
@@ -40,10 +33,8 @@ export function onDesktop() {
 /**
  * Extract YouTube Video Id from video URL. Example: The video Id of
  * 'https://www.youtube.com/watch?v=x5yPyrpeWjo' is 'x5yPyrpeWjo'.
- * @param {string} videoURL - Video URL
- * @return {string | null} - Video Id
  */
-export function extractVideoId(videoURL) {
+export function extractVideoId(videoURL: string): string | null {
   return new URL(videoURL).searchParams.get('v');
 }
 
@@ -52,16 +43,15 @@ export function extractVideoId(videoURL) {
  * Wait for DOM element to exist, and return the element as soon as it exists.
  * This function is not declared asynchronous because we need the `resolve`
  * function in the callback of the `MutationObserver`.
- * @param {string} selector - DOM node selector
- * @return {object} - Promise resolving to element
  */
-export function waitForElt(selector) {
+export function waitForElt<T extends Element = Element>(selector: string):
+    Promise<T> {
   return new Promise((resolve) => {
-    const elt = document.querySelector(selector);
+    const elt = document.querySelector<T>(selector);
     if (elt) resolve(elt);
     else {
       new MutationObserver((_, observer) => {
-        const elt = document.querySelector(selector);
+        const elt = document.querySelector<T>(selector);
         if (elt) {
           observer.disconnect();
           resolve(elt);
@@ -75,23 +65,22 @@ export function waitForElt(selector) {
 /**
  * Get YT video element. This function's primary purpose is to avoid duplication
  * of the relevant query selector whenever the video element is needed.
- * @return {object} - YT video element
  */
-export function getVideo() {
+export function getVideo(): Promise<HTMLVideoElement> {
   // On the mobile app, if autoplay is disabled, the video element is replaced
   // once the video is played. Therefore, we need to wait until the video is
   // playing before returning the video element. Conveniently, the
   // to-be-replaced video element does not have a 'src' attribute, and thus an
   // appropriate query selector is readily constructed.
-  return waitForElt(onMobile() ? 'video[src]' : '#movie_player video');
+  return waitForElt<HTMLVideoElement>(onMobile() ?
+      'video[src]' : '#movie_player video');
 }
 
 
 /**
  * Get movie player element.
- * @return {object} - Movie player element
  */
-export function getMoviePlayer() {
+export function getMoviePlayer(): Promise<HTMLElement> {
   return waitForElt('#movie_player');
 }
 
@@ -101,10 +90,8 @@ export function getMoviePlayer() {
  * assigned the class 'easy-languages-dict'. This makes it easier to distinguish
  * them from native YouTube page elements and makes inadvertent interference
  * with the YT page less likely.
- * @param {string} _class - Class to add to element
- * @return {object} - Easy Languages Dict element
  */
-export function createElement(_class) {
+export function createElement(_class: string): HTMLDivElement {
   const element = document.createElement('div');
   element.classList.add('easy-languages-dict', _class);
   return element;
@@ -114,15 +101,13 @@ export function createElement(_class) {
 /**
  * Return all DOM elements created by Easy Languages Dictionary to match the
  * specified query selector.
- * @param {string} selector - Query selector
- * @return {array} - Array of matching elements
  */
-export function easyLangsDictElts(selector) {
+export function easyLangsDictElts(selector: string): HTMLElement[] {
   const elements = document.getElementsByClassName('easy-languages-dict');
   return [].filter.call(
     elements,
     /** @param{HTMLElement} elt */
-    (elt) => elt.matches(selector)
+    (elt: HTMLElement) => elt.matches(selector)
   );
 }
 
@@ -130,9 +115,8 @@ export function easyLangsDictElts(selector) {
 /**
  * Event handler for 'keydown' event. Intercept arrow keys and rewind or
  * fast-forward the video by 2 seconds instead of the default 5.
- * @param {object} event - Keydown event
  */
-function keyEventHandler(event) {
+function keyEventHandler(event: KeyboardEvent) {
   const key = event.code;
   const rewindKeys = ['ArrowLeft', 'KeyH']; // Make vim users feel at home.
   const fastfwdKeys = ['ArrowRight', 'KeyL'];
@@ -140,11 +124,15 @@ function keyEventHandler(event) {
       // Don't intercept keys when typing comment.
       !document.activeElement?.getAttribute('contenteditable') &&
       // Don't intercept keys when typing in search box.
-      document.activeElement?.tagName != 'INPUT') {
+      (document.activeElement as HTMLElement | null)?.tagName != 'INPUT') {
     event.stopPropagation();
     // Prevent page from scrolling horizontally if arrow keys are pressed.
     event.preventDefault();
-    rewindKeys.includes(key) ? rewind() : fastfwd();
+    if (rewindKeys.includes(key)) {
+      rewind();
+    } else {
+      fastfwd();
+    }
   }
 }
 
@@ -153,7 +141,7 @@ function keyEventHandler(event) {
  * Add 'keydown' event listener to intercept arrow keys and rewind or
  * fast-forward the video by 2 seconds instead of the default 5.
  */
-export function addRewindFastfwdListener() {
+export function addRewindFastfwdListener(): void {
   // Call 'keydown' event handler during capturing phase, on the `document`
   // element. This results in the event handler being called before any of YT's
   // event handlers are called, which are likely bubbling and attached to
@@ -169,7 +157,7 @@ export function addRewindFastfwdListener() {
  * result in the video being rewound/fast-forwarded by the default 5 seconds.
  * This necessitates the removal of the event listener.
  */
-export function removeRewindFastfwdListener() {
+export function removeRewindFastfwdListener(): void {
   document.removeEventListener('keydown', keyEventHandler, {capture: true});
 }
 
@@ -178,10 +166,10 @@ export function removeRewindFastfwdListener() {
  * On the mobile YT page, this function prevents the pointer-enterable
  * container's children from being on top of the video controls when they are
  * active.
- * @param {object} pointerEnterableContainer - Pointer-enterable container
  */
 export async function
-hideBehindActivePlayerControls(pointerEnterableContainer) {
+hideBehindActivePlayerControls(pointerEnterableContainer: HTMLElement):
+    Promise<void> {
   const observer = new MutationObserver((mutations) => {
     mutations.forEach(async (mutation) => {
       // Since the pointer-enterable container was inserted before the player
@@ -218,10 +206,8 @@ hideBehindActivePlayerControls(pointerEnterableContainer) {
 
 /**
  * Wait for video to be playable.
- * @param {Object} video - HTML video element
- * @return {Promise<void>} - Resolves when video is ready to be played
  */
-export function waitForPlayable(video) {
+export function waitForPlayable(video: HTMLVideoElement): Promise<void> {
   return new Promise((resolve) => {
     if (video.readyState >= 3) resolve();
     else {
@@ -236,23 +222,18 @@ export function waitForPlayable(video) {
 /**
  * Whether or not a word is translatable. Numbers and dashes can't be
  * translated.
- * @param {string} wordText - Word text
- * @return {boolean} - Whether word can be translated
  */
-export function isTranslatable(wordText) {
-  const isNumeric =
-    /** @param {string} str */
-    (str) => !isNaN(Number(str));
+export function isTranslatable(wordText: string): boolean {
+  const isNumeric = (str: string) => !isNaN(Number(str));
   return !isNumeric(wordText) && wordText != '-';
 }
 
 
 /**
  * Get dimensions of Data URL image.
- * @param {string} dataURL - Data URL
- * @return {object} - Once resolved, object with width and height properties
  */
-export function getImageDimensions(dataURL) {
+export function getImageDimensions(dataURL: string):
+    Promise<{ width: number; height: number }> {
   const image = new Image();
   image.src = dataURL;
   return new Promise((resolve) => {
@@ -268,10 +249,9 @@ export function getImageDimensions(dataURL) {
 
 /**
  * Check if a promise is resolved or not.
- * @param {promise} promise - Promise to be checked
- * @return {promise} - Resolves to whether promise is resolved
  */
-export async function isPromiseResolved(promise) {
+export async function isPromiseResolved<T>(promise: Promise<T>):
+    Promise<boolean> {
   const notAPromise = 'unlikely value';
   return Promise.race([promise, notAPromise])
       .then((value) => (value !== notAPromise));

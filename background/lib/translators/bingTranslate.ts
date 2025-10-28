@@ -1,26 +1,22 @@
-//@ts-check
-'use strict';
-
 /**
 Inspired by the `POST` requests made by `bing.com/translator`.
 */
 
 
-import {getStoredData, storeData, isPromiseResolved} from '../utils.js';
+import {getStoredData, storeData, isPromiseResolved} from '../utils';
 
 
 // Promise used to prevent authentication data from being fetched twice if two
 // translation requests are made in quick succession. Translation requests
 // always come in pairs (out-of-context and in-context translations).
-let authDataPromise;
+let authDataPromise: Promise<Record<string, string>> | undefined;
 
 
 /**
  * Obtain authentication data for the Bing Translate API.
- * @return {Promise<Object>} - Authentication data
  */
-async function fetchAuthData() {
-  const authData = {};
+async function fetchAuthData(): Promise<Record<string, string>> {
+  const authData: Record<string, string> = {};
   const url = 'https://www.bing.com/translator';
   console.debug(`Fetching authentication data from ${url}`);
   const translatePage = await fetch(url).then((response) => response.text());
@@ -29,7 +25,9 @@ async function fetchAuthData() {
   authData.ig = translatePage.match(/IG:"(.*?)"/)?.[1] ?? '';
   authData.iid = translatePage.match(/data-iid="(.*?)"/)?.[1] ?? '';
   const abusePreventionHelper = JSON.parse(
-      translatePage.match(/params_AbusePreventionHelper = (.*?);/)?.[1] ?? '{}');
+      translatePage.match(/params_AbusePreventionHelper = (.*?);/)?.[1]
+      ??
+      '{}');
   authData.token = abusePreventionHelper[1];
   authData.key = abusePreventionHelper[0];
 
@@ -40,12 +38,11 @@ async function fetchAuthData() {
 /**
  * Obtain authentication data for the Bing Translate API from storage if it has
  * previously been stored, otherwise fetch authentication data and store it.
- * @param {boolean} refresh - Whether to fetch new authentication data
- * @return {Promise<Object>} - Authentication data
  */
-async function getAuthData(refresh=false) {
+async function getAuthData(refresh=false): Promise<Record<string, string>> {
   const authDataStorageKey = 'bingTranslateAuthData';
-  let authData = await getStoredData(authDataStorageKey);
+  let authData = await getStoredData(authDataStorageKey) as
+      Record<string, string> | undefined;
   if (!authData || refresh) {
     authData= await fetchAuthData();
     await storeData(authDataStorageKey, authData);
@@ -56,13 +53,14 @@ async function getAuthData(refresh=false) {
 
 /**
  * Send translation request to Bing Translate API and parse response.
- * @param {string} text - Text to be translated
- * @param {Record<string, string>} options - Translation options (languages)
  */
-async function requestTranslation(text, options) {
-  const authData = await authDataPromise;
+async function requestTranslation(
+  text: string,
+  options: Record<string, string>,
+): Promise<string> {
+  const authData = await authDataPromise!;
 
-  const payload = {
+  const payload: Record<string, string> = {
     fromLang: options.from,
     text,
     to: options.to,
@@ -104,14 +102,14 @@ async function requestTranslation(text, options) {
 
 /**
  * Translate text with the Bing Translate API.
- * @param {string} text - Text to be translated
- * @param {Object} options - Translation options (languages)
- * @return {Promise<Object>} - Translation promise resolving to translated string
  */
-export default async function bingTranslate(text, options) {
+export default async function bingTranslate(
+  text: string,
+  options: { from: string; to: string },
+): Promise<string> {
   if (!authDataPromise) authDataPromise = getAuthData();
 
-  let translation;
+  let translation: string;
   try {
     translation = await requestTranslation(text, options);
   } catch (error) {

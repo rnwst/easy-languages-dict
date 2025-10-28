@@ -1,16 +1,12 @@
-// @ts-check
-'use strict';
-
 import {KNOWN_INNERTUBE_API_KEY, KNOWN_WEB_CLIENT_VERSION}
-  from './constants.js';
-import {onMobile} from './utils.js';
+  from './constants';
+import {onMobile} from './utils';
 
 
 /**
  * Concatenate all the page's scripts.
- * @return {string} - Concatenation of all the page's scripts
  */
-function concatAllScripts() {
+function concatAllScripts(): string {
   return ''.concat(
       ...Array.from(document.scripts).map((script) => script.innerHTML));
 }
@@ -18,9 +14,8 @@ function concatAllScripts() {
 
 /**
  * Concatenation of all the page's scripts.
- * @type {string}
  */
-const SCRIPTS = concatAllScripts();
+const SCRIPTS: string = concatAllScripts();
 
 
 /**
@@ -31,7 +26,7 @@ const SCRIPTS = concatAllScripts();
  * this extension attempts to extract the key from the page.
  * @return {string} - Innertube API key
  */
-export function getInnertubeAPIKey() {
+export function getInnertubeAPIKey(): string {
   let key = SCRIPTS.match(/"INNERTUBE_API_KEY":"(?<key>[^"]+?)"/)
       ?.groups?.key;
   if (!key) {
@@ -46,9 +41,8 @@ export function getInnertubeAPIKey() {
 
 /**
  * Key for Innertube, YouTube's private API.
- * @type {string}
  */
-const INNERTUBE_API_KEY = getInnertubeAPIKey();
+const INNERTUBE_API_KEY: string = getInnertubeAPIKey();
 
 
 /**
@@ -58,7 +52,7 @@ const INNERTUBE_API_KEY = getInnertubeAPIKey();
  * be supported indefinitely.
  * @return {string} - YT web client version
  */
-export function getWebClientVersion() {
+export function getWebClientVersion(): string {
   let version = SCRIPTS.match(/\{"key":"cver","value":"(?<version>[\d.]+?)"\}/)
       ?.groups?.version;
   if (!version) {
@@ -73,12 +67,9 @@ export function getWebClientVersion() {
 
 /**
  * Fetch metadata for given YouTube video.
- * @param {string} videoId - YT video Id
- * @param {string} webClientVersion - YT web client version
- * @return {Promise<Response>} Response promise
  */
-export function fetchMetadata(videoId, webClientVersion) {
-  // need to retry in case of poor connection...
+export function fetchMetadata(videoId: string, webClientVersion: string):
+    Promise<Response> {
   return fetch(
       `https://${onMobile() ? 'm' : 'www'}.youtube.com/youtubei/v1/player?` +
       `key=${INNERTUBE_API_KEY}`,
@@ -104,21 +95,15 @@ export function fetchMetadata(videoId, webClientVersion) {
 /**
  * Extract channel handle from channel URL. Example: The channel handle of
  * 'https://www.youtube.com/@EasyPolish' is 'EasyPolish'.
- * @param {string} channelURL - Channel URL
- * @return {string | undefined} - Channel handle
  */
-export function extractChannelHandle(channelURL) {
+export function extractChannelHandle(channelURL: string): string | undefined {
   return new URL(channelURL).pathname
       ?.match(/\/@(?<handle>[a-zA-Z0-9_\-.]+)/)?.groups?.handle;
 }
 
 
-/**
- * @param {string} videoId
- * @param {string} webClientVersion
- * @return {Promise<{ title: string, channelURL: string, publicationDate: Date }>}
- */
-async function fetchVideoMetadata(videoId, webClientVersion) {
+async function fetchVideoMetadata(videoId: string, webClientVersion: string):
+    Promise<{ title: string; channelURL: string; publicationDate: Date }>{
   const response =
       await fetchMetadata(videoId, webClientVersion);
   const responseData = await response.json();
@@ -146,12 +131,11 @@ async function fetchVideoMetadata(videoId, webClientVersion) {
  * solution is for this extension to duplicate the API call. This is not ideal
  * due to redundant data transmission, but until `filterResponseData` is
  * implemented in Chromium, there is no good alternative.
- * @param {string} videoId - YT Video Id
- * @return {Promise<object>} - Video Metadata
  */
-export default async function getVideoMetadata(videoId) {
+export default async function getVideoMetadata(videoId: string):
+    Promise<{ channelHandle: string; title: string; publicationDate: Date }>{
   const WEB_CLIENT_VERSION = getWebClientVersion();
-  let {title, channelURL, publicationDate} =
+  const {title, channelURL, publicationDate} =
       await fetchVideoMetadata(videoId, WEB_CLIENT_VERSION);
   // Fetching the title and the channel URL could be unsuccessful due to an API
   // change and a corresponding YT web client change. In that case, passing an

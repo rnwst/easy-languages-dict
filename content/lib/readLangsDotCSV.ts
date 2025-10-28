@@ -1,6 +1,3 @@
-// @ts-check
-'use strict';
-
 /**
 The functions in this file allow reading of `langs.csv`, which contains
 essential information regarding the processing of various languages. This
@@ -16,10 +13,8 @@ I've decided on the 'web-accessible-resources' method.
  * Function used to parse `langs.csv`. This function is too simple to parse an
  * arbitrary CSV file (it cannot handle quoted values, carriage return line
  * endings, ...) but it does a good enough job for `langs.csv`.
- * @param {string} csvStr - CSV file contents
- * @return {array} - Array of objects whose keys are equal to the table headers
  */
-export function parseCSV(csvStr) {
+export function parseCSV(csvStr: string) {
   const lines = csvStr.split('\n');
   const headers = lines[0].split(',');
   const data = lines.slice(1, -1).map((rowStr) => rowStr.split(','));
@@ -32,9 +27,9 @@ export function parseCSV(csvStr) {
 
 /**
  * Return information about supported languages and their respective codes.
- * @return {Promise<Array<Object>>} - Table row array containing objects with table header keys
  */
-export default async function readLangsDotCSV() {
+export default async function readLangsDotCSV():
+    Promise<Array<Record<string, string>>> {
   const url = chrome.runtime.getURL('langs.csv');
   const csvStr = await fetch(url).then((stream) => stream.text());
   return parseCSV(csvStr);

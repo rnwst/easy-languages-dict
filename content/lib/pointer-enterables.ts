@@ -1,16 +1,14 @@
-//@ts-check
-'use strict';
-
-import {createElement, easyLangsDictElts} from './utils.js';
+import {createElement, easyLangsDictElts} from './utils';
 
 
 /**
  * Create pointer-enterables. These elements contain 'pointerenter' event
  * listeners, which create corresponding translation bubbles.
- * @param {array} words - OCRed words
- * @param {object} screenshotDims - Dims of OCRed screenshot
  */
-export function createPointerEnterables(words, screenshotDims) {
+export function createPointerEnterables(
+  words,
+  screenshotDims: { width: number; height: number },
+) {
   const pointerEnterableContainer =
       easyLangsDictElts('.pointer-enterable-container')[0];
 

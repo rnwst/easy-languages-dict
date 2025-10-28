@@ -1,19 +1,16 @@
-//@ts-check
-'use strict';
-
 import {
   createElement,
   easyLangsDictElts,
-} from './utils.js';
+} from './utils';
 
 
 /**
  * Create translation bubble.
- * @param {object} word - Word for which to create translation bubble
- * @param {object} screenshotDims - Dimensions of OCRed screenshot
- * @return {object} - Translation bubble
  */
-export function createTranslationBubble(word, screenshotDims) {
+export function createTranslationBubble(
+  word,
+  screenshotDims: { width: number; height: number },
+): HTMLDivElement {
   const bubble = createElement('translation-bubble');
 
   const bubbleContainer = easyLangsDictElts('.translation-bubble-container')[0];

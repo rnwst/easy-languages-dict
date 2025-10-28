@@ -1,7 +1,4 @@
-//@ts-check
-'use strict';
-
-import {easyLangsDictElts, createElement} from './utils.js';
+import {easyLangsDictElts, createElement} from './utils';
 
 
 /**
@@ -9,11 +6,12 @@ import {easyLangsDictElts, createElement} from './utils.js';
  * two-fold: firstly to indicate to the user that a word has been successfully
  * OCRed, and secondly to indicate via a color change that a word has a
  * translation bubble above it.
- * @param {array} words - OCRed words
- * @param {object} screenshotDims - Dimensions of OCRed screenshot
- * @param {string} descenderMask - Mask image to mask out descenders
  */
-export function createUnderlines(words, screenshotDims, descenderMask) {
+export function createUnderlines(
+  words: Tesseract.Word[],
+  screenshotDims: { width: number; height: number },
+  descenderMask: string,
+) {
   const underlineContainer = easyLangsDictElts('.underline-container')[0];
 
   underlineContainer.style.setProperty(
@@ -54,9 +52,8 @@ export function unilluminateUnderlines() {
 
 
 /**
- * @param {number} wordIndex - Index of word whose underline is to be
- * illuminated
+ * Illuminate underline by index.
  */
-export function illuminateUnderline(wordIndex) {
-  easyLangsDictElts('.underline')[wordIndex].classList.add('illuminated');
+export function illuminateUnderline(wordIndex: number) {
+  (easyLangsDictElts('.underline')[wordIndex]).classList.add('illuminated');
 }

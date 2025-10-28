@@ -7,7 +7,6 @@ import path from 'path';
 import crypto from 'crypto';
 import webExt from 'web-ext';
 // See https://github.com/import-js/eslint-plugin-import/issues/1810.
-// eslint-disable-next-line import/no-unresolved
 import * as adbUtils from 'web-ext/util/adb';
 import {optimize as optimizeSVG} from 'svgo';
 import {convert as svg2png} from 'convert-svg-to-png';
@@ -126,7 +125,8 @@ function convertMV3ToMV2(manifestV3) {
   // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/web_accessible_resources.
   manifestV2.web_accessible_resources = manifestV3.web_accessible_resources
       .map(
-        /** @param{{ resources: Array<String>, matches: Array<String> }} resource */
+        /** @param{{ resources: Array<String>,
+                     matches: Array<String> }} resource */
         (resource) => resource.resources
       ).flat();
   manifestV2.permissions.push(...manifestV3.host_permissions);
@@ -336,7 +336,7 @@ function esbuildOptions(entryPoint, distDir, plugin) {
   };
 
   return {
-    entryPoints: [entryPoint],
+    entryPoints: [entryPoint.replace(/\.js$/, '.ts')],
     // Since the background script is an ES6 module, it doesn't have to be
     // bundled. Unfortunately, esbuild doesn't behave as one might expect when
     // `bundle` is set to `false`:
@@ -619,7 +619,8 @@ async function main() {
 
   if (args.length === 0) {
     // 'firefox-desktop' and 'firefox-android' share the same distributable.
-    for (const browser of /** @type{Array<Browser>} */ (['chromium', 'firefox'])) {
+    for (const browser of
+        /** @type{Array<Browser>} */ (['chromium', 'firefox'])) {
       const buildMsg = `Building extension for target ${browser}:`;
       console.log(`\n${buildMsg}\n${'='.repeat(buildMsg.length)}`);
       await build(browser, true);

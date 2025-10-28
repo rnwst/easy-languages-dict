@@ -1,13 +1,11 @@
-//@ts-check
-'use strict';
-
 /**
  * Translate text using the DeepL API.
  * Inspired by the DeepL browser extension.
- * @param {string} text - Text to be translated
- * @param {object} options - Translation options (languages)
  */
-export default async function deepL(text, options) {
+export default async function deepL(
+  text: string,
+  options: { from: string; to: string },
+): Promise<string> {
   let timestamp = Date.now();
   // The timestamp needs to be divisible by the number of times the letter 'i'
   // appears in the text to be translated plus one. No joke.

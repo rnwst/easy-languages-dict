@@ -1,6 +1,3 @@
-//@ts-check
-'use strict';
-
 /**
 Translation via requests to various APIs is done in the background script. This
 is because cross-origin requests are no longer allowed in content scripts in
@@ -12,8 +9,8 @@ scripts about changes to the URL performed with `history.pushState()`.
 */
 
 
-import respondToTranslationRequest from './lib/respondToTranslationRequest.js';
-import notifyAboutURLChange from './lib/notifyAboutURLChange.js';
+import respondToTranslationRequest from './lib/respondToTranslationRequest';
+import notifyAboutURLChange from './lib/notifyAboutURLChange';
 
 
 chrome.runtime.onMessage.addListener(respondToTranslationRequest);

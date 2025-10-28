@@ -1,20 +1,13 @@
-//@ts-check
-'use strict';
-
 /**
  * Find subtitle text band's vertical boundary position, as a fraction of total
  * video height. This position data is used for taking a screenshot of the
  * subtitle band for OCR, and for positioning of HTML elements overlaid on the
  * video.
- * @param {string} language - Video language
- * @param {string} videoId - Video Id
- * @param {Date} publicationDate - Video publication date
- * @return {object} - Subtitle position
  */
 export default function getSubtitlePosition(
-    language,
-    videoId,
-    publicationDate,
+    language: string,
+    videoId: string,
+    publicationDate: Date,
 ) {
   const standardPosition = {
     top: 0.780,

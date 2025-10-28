@@ -1,16 +1,11 @@
-//@ts-check
-'use strict';
-
-import tesseract from 'tesseract.js';
+import * as Tesseract from 'tesseract.js';
 
 
 /**
  * Create Tesseract worker.
- * @param {string} langCode - Tesseract language code
- * @return {promise} - Worker
  */
-export default function createOCRWorker(langCode) {
-  return tesseract.createWorker(
+export default function createOCRWorker(langCode: string) {
+  return Tesseract.createWorker(
       langCode,
       // OCR Engine Mode. Options are detailed here:
       // https://github.com/naptha/tesseract.js/blob/master/src/constants/OEM.js.

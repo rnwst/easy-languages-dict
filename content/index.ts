@@ -1,6 +1,3 @@
-// @ts-check
-'use strict';
-
 import {
   onMobile,
   onDesktop,
@@ -15,31 +12,31 @@ import {
   isTranslatable,
   getImageDimensions,
   isPromiseResolved,
-} from './lib/utils.js';
-import getVideoMetadata from './lib/getVideoMetadata.js';
-import getLang from './lib/getLang.js';
-import createOCRWorker from './lib/createOCRWorker.js';
-import getSubtitlePosition from './lib/getSubtitlePosition.js';
-import {createScreenshotOverlay, takeScreenshots} from './lib/screenshot.js';
+} from './lib/utils';
+import getVideoMetadata from './lib/getVideoMetadata';
+import getLang from './lib/getLang';
+import createOCRWorker from './lib/createOCRWorker';
+import getSubtitlePosition from './lib/getSubtitlePosition';
+import {createScreenshotOverlay, takeScreenshots} from './lib/screenshot';
 import {
   createUnderlines,
   removeUnderlines,
   illuminateUnderline,
   unilluminateUnderlines,
-} from './lib/underlines.js';
+} from './lib/underlines';
 import {createPointerEnterables, removePointerEnterables}
-  from './lib/pointer-enterables.js';
+from './lib/pointer-enterables';
 import {createTranslationBubble, removeTranslationBubbles}
-  from './lib/translation-bubbles.js';
-import translateWord from './lib/translateWord.js';
-import avoidBrowserBugs from './lib/avoidBrowserBugs.js';
+  from './lib/translation-bubbles';
+import translateWord from './lib/translateWord';
+import avoidBrowserBugs from './lib/avoidBrowserBugs';
 
 
 // YouTube is a single-page app, and updates URLs using `history.pushState`.
 // Thus, we need to execute the main function once at the beginning, and
 // subsequently everytime the user navigates to a new video.
-let videoId = extractVideoId(document.URL);
-videoId && main();
+let videoId: string | null = extractVideoId(document.URL);
+if (videoId) main();
 chrome.runtime.onMessage.addListener((message) => {
   // When loading (not navigating to) a URL which corresponds to a playlist,
   // YouTube pushes a history state, even though no page navigation is
@@ -66,7 +63,7 @@ chrome.runtime.onMessage.addListener((message) => {
 async function main() {
   const videoId = extractVideoId(document.URL);
 
-  const videoMetadata = await getVideoMetadata(videoId);
+  const videoMetadata = await getVideoMetadata(videoId!);
   const lang = await getLang(videoMetadata);
   // If the language does not appear in `langs.csv` or if it is unsupported by
   // Tesseract, return.
@@ -79,7 +76,7 @@ async function main() {
   const video = await getVideo();
 
   const subtitlePosition =
-      getSubtitlePosition(lang.name, videoId, videoMetadata.publicationDate);
+      getSubtitlePosition(lang.name, videoId!, videoMetadata.publicationDate);
 
   const underlineContainer =
       createScreenshotOverlay(video, subtitlePosition, 'underline-container');
@@ -123,16 +120,17 @@ async function main() {
 
   translationBubbleContainer.addEventListener(
     'translation-request',
-    /** @param{CustomEvent} evt */
-    (evt) => {
+    (evt: Event) => {
+      const customEvent = evt as
+          CustomEvent<{words; wordIndex: number; screenshotDims}>;
       if (document.contains(translationBubbleContainer)) {
         removeTranslationBubbles();
         unilluminateUnderlines();
-        const {words, wordIndex, screenshotDims} = evt.detail;
+        const {words, wordIndex, screenshotDims} = customEvent.detail;
         illuminateUnderline(wordIndex);
-        const bubble = createTranslationBubble(words[wordIndex], screenshotDims);
-        const sentence = evt.detail.words.map(
-          /** @param{Object} word */
+        const bubble =
+            createTranslationBubble(words[wordIndex], screenshotDims);
+        const sentence = customEvent.detail.words.map(
           (word) => word.text
         );
         translateWord(
@@ -141,12 +139,10 @@ async function main() {
             lang,
         )
             .then(
-              /** @param{string} translation */
               (translation) => bubble.innerHTML = translation
             )
             .catch(
-              /** @param{Error} error */
-              (error) => bubble.innerHTML =
+              (error: Error) => bubble.innerHTML =
               `<div class="error">${error.name}: ${error.message}</div>`
             );
       }
@@ -164,7 +160,7 @@ async function main() {
 
   // Used to prevent overlaid elements from being recreated if the OCRed
   // sentence hasn't changed.
-  let previouslyOCRedText;
+  let previouslyOCRedText: string | undefined;
 
   const mainLoop = async () => {
     while (videoId === extractVideoId(document.URL) &&
@@ -180,7 +176,6 @@ async function main() {
 
         const words = (data.confidence > 65) ?
             data.words.filter(
-              /** @param{Object} word */
               (word) => isTranslatable(word.text)
             ) : [];
 

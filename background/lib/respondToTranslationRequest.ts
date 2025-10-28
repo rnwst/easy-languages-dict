@@ -1,36 +1,32 @@
-// @ts-check
-'use strict';
-
-import googleTranslate from './translators/googleTranslate.js';
-import bingTranslate from './translators/bingTranslate.js';
-import deepL from './translators/deepL.js';
+import googleTranslate from './translators/googleTranslate';
+import bingTranslate from './translators/bingTranslate';
+import deepL from './translators/deepL';
 
 
 /**
  * For cashing of translations, to prevent unnecessary requests to APIs, which
  * only allow a limited number of requests in a given timeframe.
- * @type {object}
  */
-const dicts = {};
+const dicts: Record<string, Record<string, Promise<string>>> = {};
 
 
 /**
  * Generate key name for translations to be stored in `dicts`.
- * @param {string} translator - Translator
- * @param {object} langCodes - Language codes
- * @return {string} - Key name for `dict`
  */
-export function genDictName(translator, langCodes) {
+export function genDictName(
+  translator: string,
+  langCodes: { from: string; to: string },
+): string {
   return translator + langCodes.from + '-' + langCodes.to;
 }
 
 
 /**
  * Get translation function depending on which translator is to be used.
- * @param {string} translator - Translation translator
- * @return {function} - Translation function
  */
-function getTranslatorFunction(translator) {
+function getTranslatorFunction(
+  translator: string,
+): (text: string, options: { from: string; to: string }) => Promise<string> {
   if (translator === 'bing') return bingTranslate;
   if (translator === 'google') return googleTranslate;
   return deepL;
@@ -40,23 +36,28 @@ function getTranslatorFunction(translator) {
 /**
  * Function registered as a listener in background script. Responds to
  * translation requests from content script.
- * @param {object} message - Request object received from content script
- * @param {object} _ - Sender object - not used
- * @param {function} sendResponse - Function to respond to content script
- * @return {boolean} - `true`, used to keep `sendResponse` function alive
  */
 export default function respondToTranslationRequest(
-    message, _, sendResponse) {
+  message: {
+    text: string;
+    translator: string;
+    langCodes: { from: string; to: string }
+  },
+  _: unknown,
+  sendResponse: (response) => void,
+): boolean {
   const text = message.text;
   const translate = getTranslatorFunction(message.translator);
 
   const dictName = genDictName(message.translator, message.langCodes);
-  (dictName in dicts) || (dicts[dictName] = {});
+  if (!(dictName in dicts)) {
+    dicts[dictName] = {};
+  }
 
   /**
    * @param{Promise<string>} translationPromise
    */
-  const sendTranslation = (translationPromise) => {
+  const sendTranslation = (translationPromise: Promise<string>) => {
     // Sending a promise synchronously as a response results in the content
     // script receiving an empty object. This is because `sendResponse` only
     // works with JSON serializable objects, and a promise is not. We cannot
@@ -72,7 +73,7 @@ export default function respondToTranslationRequest(
             translation,
           });
         })
-        .catch((error) => {
+        .catch((error: Error & { code?: string }) => {
           console.error('An error occurred while attempting to translate ' +
                         `"${text}":\n`, error);
           // Delete entry from `dict`. This prevents e.g. a temporary lack of

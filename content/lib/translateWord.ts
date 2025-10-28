@@ -1,12 +1,7 @@
-// @ts-check
-'use strict';
-
 /**
  * Escape potential HTML.
- * @param {string} text - OCRed text
- * @return {string} - Escaped text
  */
-export function escapeHTML(text) {
+export function escapeHTML(text: string): string {
   const elt = document.createElement('b');
   elt.textContent = text;
   return elt.textContent;
@@ -16,11 +11,8 @@ export function escapeHTML(text) {
 /**
  * Create string to be sent to translation API by concatenating the sentence's
  * words and wrapping the word of interest in `<b>` tags.
- * @param {array} sentence - Array of words comprising sentence
- * @param {number} wordIndex - Index of word to be translated in context
- * @return {string} - String to be sent to translation API
  */
-function wrapWordInTags(sentence, wordIndex) {
+function wrapWordInTags(sentence: string[], wordIndex: number): string {
   return sentence.map((word, index) => {
     word = escapeHTML(word);
     return (index === wordIndex) ? '<b>' + word + '</b>' : word;
@@ -33,17 +25,14 @@ function wrapWordInTags(sentence, wordIndex) {
  * Throw an error if an error was received. Since only JSON serializable objects
  * can be sent by the background script, we need to transform the response
  * received back into its original form (either a translation or an error).
- * @param {object} response - Response received from background script
- * @return {object} - Translated string
  */
-export function parseResponse(response) {
+export function parseResponse(response): string {
   if (response.type === 'translation') {
     return response.translation;
   } else if (response.type === 'error') {
     console.log(response);
-    const error = new Error(response.message);
+    const error: Error & { code?: string } = new Error(response.message);
     error.name = response.name;
-    // @ts-ignore
     error.code = response.code;
     throw error;
   }
@@ -52,10 +41,8 @@ export function parseResponse(response) {
 
 /**
  * Return word wrapped in `<b>` tags.
- * @param {string} translation - Received translation
- * @return {string | undefined} - Word wrapped in `<b>` tags
  */
-export function wordInTags(translation) {
+export function wordInTags(translation: string): string | undefined {
   return translation.match(/<b>(?<word>.*?)<\/b>/)?.groups?.word;
 }
 
@@ -64,10 +51,8 @@ export function wordInTags(translation) {
  * Remove punctuation from the end of a word. When an individual word from a
  * sentence is translated, any punctuation should be removed from the
  * translation.
- * @param {string} wordWithPunctuation - Word with potential punctuation
- * @return {string} - Word without punctuation
  */
-export function removePunctuation(wordWithPunctuation) {
+export function removePunctuation(wordWithPunctuation: string): string {
   return wordWithPunctuation
       ?.match(/^(?<word>.*?)[.,:;?!]?$/)?.groups?.word ?? wordWithPunctuation;
 }
@@ -76,11 +61,9 @@ export function removePunctuation(wordWithPunctuation) {
 /**
  * Translate text by making a request to the background script and parsing the
  * response (and dealing with potential errors).
- * @param {string} text - Text to be translated
- * @param {string} translator - Translator to be used
- * @param {string} langCode - Code of language to be translated
  */
-async function translate(text, translator, langCode) {
+async function translate(text: string, translator: string, langCode: string):
+    Promise<string> {
   const langCodes = {
     from: langCode,
     to: (translator === 'deepL') ? 'EN' : 'en',
@@ -98,14 +81,12 @@ async function translate(text, translator, langCode) {
  * translation relies on the translation API being HTML capable. By wrapping the
  * word to be translated in a tag, its translated equivalent may be identified
  * from the response (as it is wrapped in the same tag, ideally at least).
- *
- * @param {array} sentence - List of words forming sentence containing word to
- * be translated
- * @param {number} wordIndex - Array index of word to be translated
- * @param {object} lang - Language object
- * @return {Promise<string>} - Promise resolving to translated word
  */
-export default async function translateWord(sentence, wordIndex, lang) {
+export default async function translateWord(
+  sentence: string[],
+  wordIndex: number,
+  lang: Record<string, string>,
+): Promise<string> {
   const word = escapeHTML(sentence[wordIndex]);
   const outOfContextTranslationPromise =
     translate(
@@ -132,7 +113,8 @@ export default async function translateWord(sentence, wordIndex, lang) {
           // translation. Google often returns a translation which doesn't
           // contain any `<b>` tags, and Bing often returns a translation
           // where the `<b>` tags are empty.
-          const translatedWord = removePunctuation(wordInTags(translation) ?? '');
+          const translatedWord =
+              removePunctuation(wordInTags(translation) ?? '');
           if (translatedWord === '') {
             return '-';
           } else {

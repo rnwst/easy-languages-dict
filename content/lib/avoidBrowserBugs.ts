@@ -1,7 +1,4 @@
-//@ts-check
-'use strict';
-
-import {waitForElt, getMoviePlayer} from './utils.js';
+import {waitForElt, getMoviePlayer} from './utils';
 
 
 /**
@@ -32,9 +29,10 @@ export default async function avoidBrowserBugs() {
   // this, we set border radii on these elements.
   const borderRadius =
     getComputedStyle(await waitForElt('#ytd-player')).borderRadius;
-  const gradientElt = await waitForElt('.ytp-gradient-bottom');
+  const gradientElt = await waitForElt<HTMLElement>('.ytp-gradient-bottom');
   gradientElt.style.borderBottomLeftRadius = borderRadius;
   gradientElt.style.borderBottomRightRadius = borderRadius;
-  const thumbnail = await waitForElt('.ytp-cued-thumbnail-overlay-image');
+  const thumbnail =
+      await waitForElt<HTMLElement>('.ytp-cued-thumbnail-overlay-image');
   thumbnail.style.borderRadius = borderRadius;
 }

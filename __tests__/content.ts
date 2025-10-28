@@ -1,11 +1,9 @@
-'use strict';
-
 import * as fs from 'fs';
 
-import {parseCSV} from '../content/lib/readLangsDotCSV.js';
+import {parseCSV} from '../content/lib/readLangsDotCSV';
 import translateWord, {
   removePunctuation,
-} from '../content/lib/translateWord.js';
+} from '../content/lib/translateWord';
 
 
 describe('getLang', () => {
@@ -19,7 +17,7 @@ describe('getLang', () => {
     text: () => fs.readFileSync('langs.csv').toString(),
   });
 
-  jest.mock('../content/lib/getVideoMetadata.js', () => {
+  jest.mock('../content/lib/getVideoMetadata', () => {
     return Promise.resolve({
       channelHandle: '',
       title: '',
@@ -28,7 +26,8 @@ describe('getLang', () => {
 
   // Need to import function using `require` after `getVideoMetadata` has been
   // mocked, as it is executed on import.
-  const {extractLangFromTitle} = require('../content/lib/getLang.js');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const {extractLangFromTitle} = require('../content/lib/getLang');
 
   describe('extractLangFromTitle', () => {
     it('extracts language from video title', () => {
@@ -94,7 +93,7 @@ describe('translateWord', () => {
 
   describe('translateWord', () => {
     it('only sends one request for one word sentence', async () => {
-      const sendMessageSpy = jest.spyOn(chrome.runtime, 'sendMessage');
+      const sendMessageSpy = jest.spyOn(global.chrome.runtime, 'sendMessage');
       await translateWord(
           ['Cześć!'],
           0,

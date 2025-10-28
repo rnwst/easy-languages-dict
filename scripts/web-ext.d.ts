@@ -16,7 +16,8 @@ declare module 'web-ext' {
      * Override manifest validation; useful for legacy experiments in scripts.
      * Return a minimal manifest-like object.
      */
-    getValidatedManifest?: () => { name: string; version: string; [key: string]: unknown };
+    getValidatedManifest?: () =>
+        { name: string; version: string; [key: string]: unknown };
   }
 
   /** Options accepted by `webExt.cmd.run(...)`. */
@@ -52,13 +53,14 @@ declare module 'web-ext' {
     noReload?: boolean;
 
     /**
-     * Set prefs (either raw "key=value" strings or a map). When using an object,
-     * values may be string/number/boolean.
+     * Set prefs (either raw "key=value" strings or a map). When using an
+     * object, values may be string/number/boolean.
      */
     pref?: string[] | Record<string, string | number | boolean>;
 
     /**
-     * Disable the use of stdin (prevents keypress controls). Example appears in README.
+     * Disable the use of stdin (prevents keypress controls). Example appears in
+     * README.
      */
     noInput?: boolean;
 
@@ -111,7 +113,10 @@ declare module 'web-ext' {
 
   /** Options accepted by `webExt.cmd.sign(...)`. */
   export interface SignOptions {
-    /** Directory to build & sign (mutually exclusive with `xpiPath` on low-level API). */
+    /**
+     * Directory to build & sign (mutually exclusive with `xpiPath` on low-level
+     * API).
+     */
     sourceDir?: string;
 
     /** Addons.mozilla.org API key / secret. */
@@ -220,7 +225,8 @@ declare module 'web-ext/util/adb' {
    * List installed Firefox APK package names on a given device ID.
    * `adbBinPath` is optional and auto-detected if omitted.
    */
-  export function listADBFirefoxAPKs(deviceId: string, adbBinPath?: string): Promise<string[]>;
+  export function listADBFirefoxAPKs(deviceId: string, adbBinPath?: string):
+      Promise<string[]>;
 }
 
 declare module 'web-ext/util/submit-addon' {
@@ -249,8 +255,9 @@ declare module 'web-ext/util/submit-addon' {
   }
 
   /**
-   * Low-level signing submitter used by `cmd.sign` internally.
-   * Prefer `webExt.cmd.sign(...)` unless you specifically need to submit an existing XPI.
+   * Low-level signing submitter used by `cmd.sign` internally. Prefer
+   * `webExt.cmd.sign(...)` unless you specifically need to submit an existing
+   * XPI.
    */
   export function signAddon(options: SignAddonOptions): Promise<unknown>;
 }

@@ -1,6 +1,3 @@
-//@ts-check
-'use strict';
-
 /**
  * Get data from local storage.
  * Usage of `browser.storage.local` is not possible, because Chromium doesn't
@@ -12,12 +9,10 @@
  * available on the `chrome` object in MV2. Therefore, the callback-based APIs
  * need to be used here, so that they work on the `chrome` object both in
  * Firefox MV2 as well as Chromium MV3.
- * @param {string} key - Key
- * @return {Promise<object>} - Data
  */
-export async function getStoredData(key) {
+export async function getStoredData(key: string): Promise<object> {
   return new Promise((resolve) => {
-    chrome.storage.local.get(key, (data) => resolve(data[key]));
+    chrome.storage.local.get(key, (data) => resolve((data)[key]));
   });
 }
 
@@ -25,10 +20,8 @@ export async function getStoredData(key) {
 /**
  * Store data in local storage. See notes above regarding use of the
  * callback-based API.
- * @param {string} key - Key
- * @param {object} data - Data
  */
-export async function storeData(key, data) {
+export async function storeData(key: string, data: object): Promise<true> {
   return new Promise((resolve) => {
     chrome.storage.local.set({[key]: data}, () => resolve(true));
   });
@@ -37,10 +30,9 @@ export async function storeData(key, data) {
 
 /**
  * Check if a promise is resolved or not.
- * @param {Promise} promise - Promise to be checked
- * @return {Promise} - Resolves to whether promise is resolved
  */
-export async function isPromiseResolved(promise) {
+export async function isPromiseResolved<T>(promise: Promise<T>):
+    Promise<boolean> {
   const notAPromise = 'unlikely value';
   return Promise.race([promise, notAPromise])
       .then((value) => (value !== notAPromise));

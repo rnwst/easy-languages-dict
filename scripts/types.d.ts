@@ -11,9 +11,14 @@ declare global {
     };
 
   type ESBuildPlugin = Plugin;
-  type ESBuildOptions = Options;
+  type ESBuildOptions = BuildOptions;
 
-  type Browser = 'chromium' | 'edge' | 'firefox' | 'firefox-desktop' | 'firefox-android'
+  type Browser =
+    | 'chromium'
+    | 'edge'
+    | 'firefox'
+    | 'firefox-desktop'
+    | 'firefox-android'
 }
 
 export {};

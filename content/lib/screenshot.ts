@@ -1,20 +1,17 @@
-//@ts-check
-'use strict';
-
-import {createElement} from './utils.js';
-import {FONT_SIZE_VIDEO_HEIGHT_FRACTION} from './constants.js';
+import {createElement} from './utils';
+import {FONT_SIZE_VIDEO_HEIGHT_FRACTION} from './constants';
 
 
 /**
  * Create video overlay element with the same position and dimensions as the
  * portion of the video that was screenshot. This element is automatically
  * resized and repositioned when the video is resized.
- * @param {object} video - YT video element
- * @param {object} subtitlePosition - Subtitle Position
- * @param {string} _class - Class to be assigned to element
- * @return {object} - Screenshot overlay element
  */
-export function createScreenshotOverlay(video, subtitlePosition, _class) {
+export function createScreenshotOverlay(
+  video: HTMLVideoElement,
+  subtitlePosition: { top: number; bottom: number },
+  _class: string,
+): HTMLDivElement {
   const screenshotOverlay = createElement(_class);
 
   // `screenshotOverlay` will become a child of the video container, not the
@@ -69,7 +66,10 @@ export function createScreenshotOverlay(video, subtitlePosition, _class) {
  * @param {object} subtitlePosition - Subtitle position
  * @return {object} - Data URI in base64 format
  */
-export function takeScreenshots(video, subtitlePosition) {
+export function takeScreenshots(
+  video: HTMLVideoElement,
+  subtitlePosition: { top: number; bottom: number },
+): { textImage: string; descenderMask: string } {
   const canvas = document.createElement('canvas');
   // The buffer canvas is needed to hold a screenshot in memory, so that
   // different filters can be applied to it. This is because canvas filters need
@@ -111,8 +111,7 @@ export function takeScreenshots(video, subtitlePosition) {
       'brightness(55%) contrast(5) brightness(2)';
 
   const getScreenshotBase64 =
-    /** @param{string} filter */
-    (filter) => {
+    (filter: string) => {
       if (canvasCtx) {
         canvasCtx.filter = filter;
         canvasCtx.drawImage(bufferCanvas, 0, 0);
