@@ -1,4 +1,4 @@
-//@ts-check
+// @ts-check
 'use strict';
 
 import esbuild from 'esbuild';
@@ -31,6 +31,7 @@ function getArgs() {
  */
 function exitIfIncorrectArgs() {
   const args = getArgs();
+  /** @type{Array<Browser>} browsers */
   const browsers = ['chromium', 'edge', 'firefox-desktop', 'firefox-android'];
   if (args.length === 0) return;
   if (args.length === 2 && args[0] === 'watch' && browsers.includes(args[1])) {
@@ -43,7 +44,7 @@ function exitIfIncorrectArgs() {
 
 /**
  * 'firefox-desktop' and 'firefox-android' share the same distributable.
- * @param {string} browser - Browser
+ * @param {Browser} browser - Browser
  * @return {string} - Browser-specific distributable directory
  */
 function browserDist(browser) {
@@ -69,17 +70,17 @@ function cleanDirectory(dir='dist/') {
 
 
 /**
- * @return {object} - Contents of `manifest.json`
+ * @return {chrome.runtime.ManifestV3} - Contents of `manifest.json`
  */
 function readManifest() {
-  const data = fs.readFileSync('manifest.json');
+  const data = fs.readFileSync('manifest.json', 'utf8');
   return JSON.parse(data);
 }
 
 
 /**
- * @param {object} manifest - Manifest to be written
- * @param {object} distDir - Manifest.json output directory
+ * @param {ManifestV2 | ManifestV3} manifest - Manifest to be written
+ * @param {string} distDir - Manifest.json output directory
  */
 function writeManifest(manifest, distDir) {
   if (!fs.existsSync(distDir)) fs.mkdirSync(distDir);
@@ -91,62 +92,79 @@ function writeManifest(manifest, distDir) {
 
 
 /**
- * @param {object} manifest - MV3 manifest
+ * @param {ManifestV3} manifestV3
+ * @return {ManifestV2}
  */
-function convertMV3ToMV2(manifest) {
-  manifest.manifest_version = 2;
+function convertMV3ToMV2(manifestV3) {
+  /** @type {ManifestV2} manifestV2 */
+  const manifestV2 = {};
+  manifestV2.manifest_version = 2;
+  // `host_permissions` don't exist in MV2.
+  for (const key of [
+    'name',
+    'version',
+    'author',
+    'homepage_url',
+    'description',
+    'icons',
+    'content_scripts',
+    'background',
+    'permissions',
+    'web_accessible_resources',
+    'minimum_chrome_version',
+    'browser_specific_settings'
+  ]) {
+    manifestV2[key] = manifestV3[key];
+  }
+  manifestV2.background.scripts = [manifestV3.background.service_worker];
   // Background scripts in MV3 are always non-persistent, but can be persistent
   // in MV2 (non-persistent background scripts are sometimes referred to as
   // 'event pages'). They should not be persistent on Firefox on Android:
   // https://blog.mozilla.org/addons/2023/08/10/prepare-your-firefox-desktop-extension-for-the-upcoming-android-release/
-  manifest.background.persistent = false;
+  manifestV2.background.persistent = false;
   // `web_accessible_resources` are defined differently in MV3 vs MV2. See
   // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/web_accessible_resources.
-  manifest.web_accessible_resources = manifest.web_accessible_resources
-      .map((resource) => resource.resources).flat();
-  // `host_permissions` don't exist in MV2.
-  manifest.permissions.push(...manifest.host_permissions);
-  delete manifest.host_permissions;
+  manifestV2.web_accessible_resources = manifestV3.web_accessible_resources
+      .map(
+        /** @param{{ resources: Array<String>, matches: Array<String> }} resource */
+        (resource) => resource.resources
+      ).flat();
+  manifestV2.permissions.push(...manifestV3.host_permissions);
+  return manifestV2;
 }
 
 
 /**
- * @param {object} manifest - Original manifest
- * @param {string} browser - Browser for which to adapt manifest
- * @return {object} - Manifest adapted to browser
+ * @param {ManifestV3} manifest
+ * @param {Browser} browser - Browser for which to adapt manifest
+ * @return {ManifestV2 | ManifestV3}
  */
 function adaptManifestToBrowser(manifest, browser) {
-  const newManifest = structuredClone(manifest);
   if (browser === 'chromium') {
+    const chromiumManifest = structuredClone(manifest);
     // Chromium doesn't recognize `browser_specific_settings`.
-    delete newManifest.browser_specific_settings;
+    delete chromiumManifest.browser_specific_settings;
     // Chromium doesn't support SVGs for icons. See
     // https://bugs.chromium.org/p/chromium/issues/detail?id=29683.
-    for (const size in newManifest?.icons) {
+    for (const size in chromiumManifest?.icons) {
       if (size) {
-        newManifest.icons[size] =
-            newManifest.icons[size].replace(/\.svg$/, '.png');
+        chromiumManifest.icons[size] =
+            chromiumManifest.icons[size].replace(/\.svg$/, '.png');
       }
     }
+    return chromiumManifest;
   }
   if (browser.match('firefox')) {
-    // The background service worker is not yet supported on Firefox:
-    // https://bugzilla.mozilla.org/show_bug.cgi?id=1573659.
-    newManifest.background.scripts = [manifest.background.service_worker];
-    // From FF 121 onwards, the presence of the `service_worker` key doesn't
-    // cause any issues, but for earlier versions, the background script does
-    // not start.
-    delete newManifest.background.service_worker;
     // I don't consider Firefox's version of MV3 useable yet. All permissions
     // are optional, and the user is not automatically prompted for those
     // permissions. The extension therefore doesn't work due to a lack of
     // required permissions, and the user is left wondering why. In addition,
     // MV3 is not (yet) supported on Firefox for Android.
-    convertMV3ToMV2(newManifest);
+    const firefoxManifest = convertMV3ToMV2(manifest);
     // Firefox only wants a 48x48px icon, and luckily accepts SVGs.
-    delete newManifest.icons['128'];
+    delete firefoxManifest.icons['128'];
+    return firefoxManifest;
   }
-  return newManifest;
 }
 
 
@@ -163,10 +181,10 @@ function copyTesseractFiles(distDir) {
     'node_modules/tesseract.js-core/tesseract-core-lstm.wasm.js',
     'node_modules/tesseract.js-core/tesseract-core-simd-lstm.wasm.js',
   ];
-  for (const [dir, files] of [
+  for (const [dir, files] of /** @type [String, String[]][] */ ([
     ['tesseract', tesseractFiles],
     ['tesseract-core', tesseractCoreFiles],
-  ]) {
+  ])) {
     const targetDir = path.join(distDir, 'content', dir);
     fs.mkdirSync(targetDir, {recursive: true});
     files.forEach((file) => {
@@ -191,8 +209,8 @@ function copyTesseractFiles(distDir) {
 
 /**
  * Get list of non-JS files to be copied to `dist/`.
- * @param {object} manifest - Manifest
- * @return {array} - Array of files to be copied to `dist/`
+ * @param {ManifestV3} manifest - Manifest
+ * @return {Array<string>} - Array of files to be copied to `dist/`
  */
 function getFilesToBeSynced(manifest) {
   const files = [];
@@ -252,7 +270,7 @@ function sync(file, distDir) {
 /**
  * For Firefox, which accepts SVG icons, optimize SVGs before copying, and for
  * Chromium, which doesn't accept SVGs, convert SVGs to PNGs.
- * @param {object} icon - Icon file
+ * @param {string} icon - Icon file
  * @param {string} size - Icon size in pixels
  * @param {string} distDir - Directory of output file
  */
@@ -261,7 +279,7 @@ async function buildIcon(icon, size, distDir) {
   const fileEnding = icon.match(regex).groups['ext'];
   const svgIcon = icon.replace(regex, '.svg');
 
-  const svgStr = fs.readFileSync(svgIcon);
+  const svgStr = fs.readFileSync(svgIcon, 'utf-8');
   const optimizedSVGStr = optimizeSVG(svgStr).data;
 
   const targetDir = path.join(distDir, path.dirname(icon));
@@ -289,8 +307,8 @@ async function buildIcon(icon, size, distDir) {
 /**
  * @param {string} entryPoint - Entry point for esbuild
  * @param {string} distDir - Output directory
- * @param {object} plugin - Esbuild plugin
- * @return {object} - Esbuild options
+ * @param {ESBuildPlugin} [plugin] - Esbuild plugin
+ * @return {ESBuildOptions} - Esbuild options
  */
 function esbuildOptions(entryPoint, distDir, plugin) {
   const outfile = path.join(distDir, entryPoint);
@@ -302,6 +320,8 @@ function esbuildOptions(entryPoint, distDir, plugin) {
   // a violation anyway, likely using a simple search for a CDN URL in the
   // source files. The remote URL is partially removed, to avoid rejection by
   // the Chrome Web Store.
+
+  /** @type ESBuildPlugin */
   const removeRemoteCodeRefs = {
     name: 'remove remote code references extension',
     setup(build) {
@@ -356,7 +376,7 @@ function zipDirectory(sourceDir, outPath) {
 
 /**
  * Build function.
- * @param {string} browser - Browser to build for
+ * @param {Browser} browser - Browser to build for
  * @param {boolean} zip - Whether to also zip the built extension
  */
 async function build(browser, zip=false) {
@@ -375,7 +395,7 @@ async function build(browser, zip=false) {
   const icons = browserSpecificManifest?.icons;
   if (icons) {
     for (const [size, icon] of Object.entries(icons)) {
-      buildIcon(icon, size, browserDist(browser));
+      await buildIcon(icon, size, browserDist(browser));
     }
   }
 
@@ -420,7 +440,9 @@ async function build(browser, zip=false) {
 class FileWatcherContext {
   #file;
   #callback;
+  /** @type AbortController */
   #abortController;
+  /** @type string */
   #fileHash;
 
   /**
@@ -463,7 +485,7 @@ class FileWatcherContext {
 /**
  * Launch browser with extension, watch for changes, rebuild and reload. Assumes
  * that the extension has already been built.
- * @param {string} browser - Browser to launch with extension
+ * @param {Browser} browser - Browser to launch with extension
  */
 async function watch(browser) {
   const extensionRunner = await webExt.cmd.run({
@@ -525,8 +547,8 @@ async function watch(browser) {
     if (icons) {
       for (const [size, icon] of Object.entries(icons)) {
         const context =
-            new FileWatcherContext(icon.replace(/\.png$/, '.svg'), () => {
-              buildIcon(icon, size, browserDist(browser));
+            new FileWatcherContext(icon.replace(/\.png$/, '.svg'), async () => {
+              await buildIcon(icon, size, browserDist(browser));
               extensionRunner.reloadAllExtensions();
             });
         contexts.push(context);
@@ -535,6 +557,7 @@ async function watch(browser) {
 
     // This esbuild plugin is needed to reload the extension if the source files
     // change.
+    /** @type {ESBuildPlugin} */
     const reloadPlugin = {
       name: 'reload extension',
       setup(build) {
@@ -596,7 +619,7 @@ async function main() {
 
   if (args.length === 0) {
     // 'firefox-desktop' and 'firefox-android' share the same distributable.
-    for (const browser of ['chromium', 'firefox']) {
+    for (const browser of /** @type{Array<Browser>} */ (['chromium', 'firefox'])) {
       const buildMsg = `Building extension for target ${browser}:`;
       console.log(`\n${buildMsg}\n${'='.repeat(buildMsg.length)}`);
       await build(browser, true);

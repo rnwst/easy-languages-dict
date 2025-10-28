@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "checkJs": true,
+    "allosJs": true,
+    "resolveJsonModule": true,
+    "lib": [
+      "ES2021"
+    ],
+    "target": "es2021",
+    "moduleResolution": "NodeNext"
+  },
+  "include": ["**/*.js", "**/*.json", "**/*.d.ts"]
+}
