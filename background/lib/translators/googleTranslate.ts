@@ -15,6 +15,6 @@ export default function googleTranslate(
       'https://translate.googleapis.com/translate_a/single?client=gtx&dt=t' +
       urlAppendix;
   return fetch(url)
-      .then((response) => response.json())
-      .then((json) => json[0][0][0] as string);
+    .then((response) => response.json())
+    .then((json) => json[0][0][0] as string);
 }

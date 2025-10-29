@@ -16,10 +16,10 @@ import notifyAboutURLChange from './lib/notifyAboutURLChange';
 chrome.runtime.onMessage.addListener(respondToTranslationRequest);
 
 chrome.webNavigation.onHistoryStateUpdated.addListener(
-    notifyAboutURLChange,
-    // Unfortunately, there doesn't seem to be a way to limit the
-    // "webNavigation" permission to specific hostnames only. Therefore, the
-    // background script is notified about all URL changes, and we need to
-    // filter out those which happen in non-YouTube tabs.
-    {url: [{hostSuffix: '.youtube.com'}]},
+  notifyAboutURLChange,
+  // Unfortunately, there doesn't seem to be a way to limit the
+  // "webNavigation" permission to specific hostnames only. Therefore, the
+  // background script is notified about all URL changes, and we need to
+  // filter out those which happen in non-YouTube tabs.
+  {url: [{hostSuffix: '.youtube.com'}]},
 );

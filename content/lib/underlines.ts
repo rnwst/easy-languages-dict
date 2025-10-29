@@ -15,8 +15,8 @@ export function createUnderlines(
   const underlineContainer = easyLangsDictElts('.underline-container')[0];
 
   underlineContainer.style.setProperty(
-      '--descender-mask',
-      `url(${descenderMask})`,
+    '--descender-mask',
+    `url(${descenderMask})`,
   );
 
   words.forEach((word) => {

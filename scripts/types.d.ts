@@ -1,4 +1,4 @@
-import type { BuildOptions, Plugin } from 'esbuild';
+import type {BuildOptions, Plugin} from 'esbuild';
 
 declare global {
   type ManifestV2 = chrome.runtime.ManifestV2;

@@ -7,9 +7,9 @@ export default function notifyAboutURLChange(
   eventDetails: { tabId: number; url: string }
 ) {
   chrome.tabs.sendMessage(
-      eventDetails.tabId,
-      {
-        url: eventDetails.url,
-      },
+    eventDetails.tabId,
+    {
+      url: eventDetails.url,
+    },
   );
 }

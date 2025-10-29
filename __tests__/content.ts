@@ -95,14 +95,14 @@ describe('translateWord', () => {
     it('only sends one request for one word sentence', async () => {
       const sendMessageSpy = jest.spyOn(global.chrome.runtime, 'sendMessage');
       await translateWord(
-          ['Cześć!'],
-          0,
-          {
-            name: 'polish',
-            defaultOutOfContextTranslator: 'bing',
-            defaultInContextTranslator: 'bing',
-            bingCode: 'pl',
-          },
+        ['Cześć!'],
+        0,
+        {
+          name: 'polish',
+          defaultOutOfContextTranslator: 'bing',
+          defaultInContextTranslator: 'bing',
+          bingCode: 'pl',
+        },
       );
       expect(sendMessageSpy).toHaveBeenCalledTimes(1);
     });

@@ -40,7 +40,7 @@ export async function getLangByChannelHandle(channelHandle: string) {
  */
 export function extractLangFromTitle(videoTitle: string): string | undefined {
   return videoTitle
-      .match(/Easy (?:\w+? )?(?<lang>\w+) \d+/)?.groups?.lang.toLowerCase();
+    .match(/Easy (?:\w+? )?(?<lang>\w+) \d+/)?.groups?.lang.toLowerCase();
 }
 
 

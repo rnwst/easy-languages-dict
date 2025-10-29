@@ -92,11 +92,11 @@ export function takeScreenshots(
   // Android, see https://bugzilla.mozilla.org/show_bug.cgi?id=1872508. Until
   // this is fixed, the extension won't work on Android.
   bufferCanvasCtx?.drawImage(
-      video,
-      0,
-      -subtitlePosition.top * video.videoHeight,
-      video.videoWidth,
-      video.videoHeight,
+    video,
+    0,
+    -subtitlePosition.top * video.videoHeight,
+    video.videoWidth,
+    video.videoHeight,
   );
 
   // This CSS filter is used to produce black text on white background, which

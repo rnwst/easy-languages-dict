@@ -8,7 +8,7 @@ import {onMobile} from './utils';
  */
 function concatAllScripts(): string {
   return ''.concat(
-      ...Array.from(document.scripts).map((script) => script.innerHTML));
+    ...Array.from(document.scripts).map((script) => script.innerHTML));
 }
 
 
@@ -28,11 +28,11 @@ const SCRIPTS: string = concatAllScripts();
  */
 export function getInnertubeAPIKey(): string {
   let key = SCRIPTS.match(/"INNERTUBE_API_KEY":"(?<key>[^"]+?)"/)
-      ?.groups?.key;
+    ?.groups?.key;
   if (!key) {
     key = KNOWN_INNERTUBE_API_KEY;
     console.error(
-        'Easy Languages Dictionary: Unable to obtain Innertube API Key! ' +
+      'Easy Languages Dictionary: Unable to obtain Innertube API Key! ' +
         `Using known key ${key} instead.`);
   }
   return key;
@@ -54,11 +54,11 @@ const INNERTUBE_API_KEY: string = getInnertubeAPIKey();
  */
 export function getWebClientVersion(): string {
   let version = SCRIPTS.match(/\{"key":"cver","value":"(?<version>[\d.]+?)"\}/)
-      ?.groups?.version;
+    ?.groups?.version;
   if (!version) {
     version = KNOWN_WEB_CLIENT_VERSION;
     console.error(
-        'Easy Languages Dictionary: Unable to obtain YT web client version! ' +
+      'Easy Languages Dictionary: Unable to obtain YT web client version! ' +
         `Using known version ${version} instead.`);
   }
   return version;
@@ -71,23 +71,23 @@ export function getWebClientVersion(): string {
 export function fetchMetadata(videoId: string, webClientVersion: string):
     Promise<Response> {
   return fetch(
-      `https://${onMobile() ? 'm' : 'www'}.youtube.com/youtubei/v1/player?` +
+    `https://${onMobile() ? 'm' : 'www'}.youtube.com/youtubei/v1/player?` +
       `key=${INNERTUBE_API_KEY}`,
-      {
-        method: 'POST',
-        body: JSON.stringify({
-          'context': {
-            'client': {
-              'clientName': 'WEB',
-              'clientVersion': webClientVersion,
-            },
-            'request': {
-              'useSsl': true,
-            },
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        context: {
+          client: {
+            clientName: 'WEB',
+            clientVersion: webClientVersion,
           },
-          'videoId': videoId,
-        }),
-      },
+          request: {
+            useSsl: true,
+          },
+        },
+        videoId: videoId,
+      }),
+    },
   );
 }
 
@@ -98,12 +98,12 @@ export function fetchMetadata(videoId: string, webClientVersion: string):
  */
 export function extractChannelHandle(channelURL: string): string | undefined {
   return new URL(channelURL).pathname
-      ?.match(/\/@(?<handle>[a-zA-Z0-9_\-.]+)/)?.groups?.handle;
+    ?.match(/\/@(?<handle>[a-zA-Z0-9_\-.]+)/)?.groups?.handle;
 }
 
 
 async function fetchVideoMetadata(videoId: string, webClientVersion: string):
-    Promise<{ title: string; channelURL: string; publicationDate: Date }>{
+    Promise<{ title: string; channelURL: string; publicationDate: Date }> {
   const response =
       await fetchMetadata(videoId, webClientVersion);
   const responseData = await response.json();
@@ -111,7 +111,7 @@ async function fetchVideoMetadata(videoId: string, webClientVersion: string):
   const channelURL =
       responseData.microformat?.playerMicroformatRenderer?.ownerProfileUrl;
   const publicationDate = new Date(
-      responseData.microformat?.playerMicroformatRenderer?.publishDate);
+    responseData.microformat?.playerMicroformatRenderer?.publishDate);
   return {title, channelURL, publicationDate};
 };
 
@@ -133,7 +133,7 @@ async function fetchVideoMetadata(videoId: string, webClientVersion: string):
  * implemented in Chromium, there is no good alternative.
  */
 export default async function getVideoMetadata(videoId: string):
-    Promise<{ channelHandle: string; title: string; publicationDate: Date }>{
+    Promise<{ channelHandle: string; title: string; publicationDate: Date }> {
   const WEB_CLIENT_VERSION = getWebClientVersion();
   const {title, channelURL, publicationDate} =
       await fetchVideoMetadata(videoId, WEB_CLIENT_VERSION);
@@ -146,7 +146,7 @@ export default async function getVideoMetadata(videoId: string):
   if ((!title || !channelURL || !publicationDate) &&
       (WEB_CLIENT_VERSION != KNOWN_WEB_CLIENT_VERSION)) {
     console.error(
-        'Easy Languages Dictionary: Unable to obtain channel and video title ' +
+      'Easy Languages Dictionary: Unable to obtain channel and video title ' +
         `for videoId '${videoId}' with new web client version! ` +
         'Trying once more with old web client version.');
     await fetchVideoMetadata(videoId, KNOWN_WEB_CLIENT_VERSION);
@@ -156,7 +156,7 @@ export default async function getVideoMetadata(videoId: string):
 
   if (!title || !channelHandle || !publicationDate) {
     throw new Error(
-        'Easy Languages Dictionary: Unable to obtain video metadata ' +
+      'Easy Languages Dictionary: Unable to obtain video metadata ' +
         `for videoId ${videoId}!`,
     );
   }

@@ -67,26 +67,26 @@ export default function respondToTranslationRequest(
     // promise is fulfilled. When an error occurs, it is 'JSON serialized'
     // before it is sent.
     translationPromise
-        .then((translation) => {
-          sendResponse({
-            type: 'translation',
-            translation,
-          });
-        })
-        .catch((error: Error & { code?: string }) => {
-          console.error('An error occurred while attempting to translate ' +
-                        `"${text}":\n`, error);
-          // Delete entry from `dict`. This prevents e.g. a temporary lack of
-          // internet connection from returning an error even when the
-          // connection is restored.
-          delete dicts[dictName][text];
-          sendResponse({
-            // 'JSON serialize' error before sending.
-            type: 'error',
-            name: error.name,
-            message: error.message,
-          });
+      .then((translation) => {
+        sendResponse({
+          type: 'translation',
+          translation,
         });
+      })
+      .catch((error: Error & { code?: string }) => {
+        console.error('An error occurred while attempting to translate ' +
+                        `"${text}":\n`, error);
+        // Delete entry from `dict`. This prevents e.g. a temporary lack of
+        // internet connection from returning an error even when the
+        // connection is restored.
+        delete dicts[dictName][text];
+        sendResponse({
+          // 'JSON serialize' error before sending.
+          type: 'error',
+          name: error.name,
+          message: error.message,
+        });
+      });
   };
 
   // Translation already cached?

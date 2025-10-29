@@ -17,11 +17,11 @@ describe('translators', () => {
   describe('googleTranslate', () => {
     it('translates', async () => {
       const translation = await googleTranslate(
-          'Hello',
-          {
-            from: 'en',
-            to: 'de',
-          },
+        'Hello',
+        {
+          from: 'en',
+          to: 'de',
+        },
       );
       expect(translation).toEqual('Hallo');
     });
@@ -52,11 +52,11 @@ describe('translators', () => {
 
     it('translates', async () => {
       const translation = await bingTranslate(
-          'Hello',
-          {
-            from: 'en',
-            to: 'de',
-          },
+        'Hello',
+        {
+          from: 'en',
+          to: 'de',
+        },
       );
       expect(translation).toEqual('Hallo');
     });
@@ -66,27 +66,27 @@ describe('translators', () => {
     it('translates sentence with lots of \'i\'s', async () => {
       await expect(Promise.all([
         deepL(
-            'iguanas ingest insects',
-            {from: 'EN', to: 'ZH'},
+          'iguanas ingest insects',
+          {from: 'EN', to: 'ZH'},
         ),
         deepL(
-            'icy igloos invite imagination',
-            {from: 'EN', to: 'FR'},
+          'icy igloos invite imagination',
+          {from: 'EN', to: 'FR'},
         ),
         deepL(
-            'incredible iguanas illuminate intricate, imaginary islands',
-            {from: 'EN', to: 'PL'},
+          'incredible iguanas illuminate intricate, imaginary islands',
+          {from: 'EN', to: 'PL'},
         ),
       ])).resolves.toBeTruthy();
     });
 
     it('translates', async () => {
       const translation = await deepL(
-          'Hello',
-          {
-            from: 'EN',
-            to: 'DE',
-          },
+        'Hello',
+        {
+          from: 'EN',
+          to: 'DE',
+        },
       );
       expect(translation).toEqual('Hallo');
     });

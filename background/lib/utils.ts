@@ -35,5 +35,5 @@ export async function isPromiseResolved<T>(promise: Promise<T>):
     Promise<boolean> {
   const notAPromise = 'unlikely value';
   return Promise.race([promise, notAPromise])
-      .then((value) => (value !== notAPromise));
+    .then((value) => (value !== notAPromise));
 }

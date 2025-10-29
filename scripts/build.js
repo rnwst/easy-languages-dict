@@ -59,7 +59,7 @@ function browserDist(browser) {
  * Delete contents of directory.
  * @param {string} dir - Directory to clean out
  */
-function cleanDirectory(dir='dist/') {
+function cleanDirectory(dir = 'dist/') {
   if (fs.existsSync(dir)) {
     console.log(`Cleaning out contents of ${dir}`);
     fs.rmSync(dir, {recursive: true});
@@ -84,8 +84,8 @@ function readManifest() {
 function writeManifest(manifest, distDir) {
   if (!fs.existsSync(distDir)) fs.mkdirSync(distDir);
   fs.writeFileSync(
-      path.join(distDir, 'manifest.json'),
-      JSON.stringify(manifest, null, 2),
+    path.join(distDir, 'manifest.json'),
+    JSON.stringify(manifest, null, 2),
   );
 }
 
@@ -124,11 +124,11 @@ function convertMV3ToMV2(manifestV3) {
   // `web_accessible_resources` are defined differently in MV3 vs MV2. See
   // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/web_accessible_resources.
   manifestV2.web_accessible_resources = manifestV3.web_accessible_resources
-      .map(
-        /** @param{{ resources: Array<String>,
+    .map(
+      /** @param{{ resources: Array<String>,
                      matches: Array<String> }} resource */
-        (resource) => resource.resources
-      ).flat();
+      (resource) => resource.resources
+    ).flat();
   manifestV2.permissions.push(...manifestV3.host_permissions);
   return manifestV2;
 }
@@ -199,7 +199,7 @@ function copyTesseractFiles(distDir) {
       // avoid rejection by the Chrome Web Store.
       if (path.basename(file) === 'worker.min.js') {
         fs.writeFileSync(targetFile, fs.readFileSync(targetFile).toString()
-            .replaceAll('https://cdn.jsdelivr.net', ''),
+          .replaceAll('https://cdn.jsdelivr.net', ''),
         );
       }
     });
@@ -292,10 +292,10 @@ async function buildIcon(icon, size, distDir) {
     // Chromium doesn't support SVGs unfortunately. See
     // https://bugs.chromium.org/p/chromium/issues/detail?id=29683.
     console.log(
-        `Converting ${svgIcon} to PNG and writing to dist`);
+      `Converting ${svgIcon} to PNG and writing to dist`);
     const png =
         await svg2png(optimizedSVGStr, {
-          launch: { executablePath },
+          launch: {executablePath},
           width: size,
           height: size
         });
@@ -328,7 +328,7 @@ function esbuildOptions(entryPoint, distDir, plugin) {
       build.onEnd((result) => {
         if (result.errors.length === 0) {
           fs.writeFileSync(outfile, fs.readFileSync(outfile)
-              .toString().replaceAll('https://cdn.jsdelivr.net', ''),
+            .toString().replaceAll('https://cdn.jsdelivr.net', ''),
           );
         }
       });
@@ -363,9 +363,9 @@ function zipDirectory(sourceDir, outPath) {
 
   return new Promise((resolve, reject) => {
     archive
-        .directory(sourceDir, false)
-        .on('error', (err) => reject(err))
-        .pipe(stream)
+      .directory(sourceDir, false)
+      .on('error', (err) => reject(err))
+      .pipe(stream)
     ;
 
     stream.on('close', () => resolve());
@@ -379,7 +379,7 @@ function zipDirectory(sourceDir, outPath) {
  * @param {Browser} browser - Browser to build for
  * @param {boolean} zip - Whether to also zip the built extension
  */
-async function build(browser, zip=false) {
+async function build(browser, zip = false) {
   if (browser === 'edge') browser = 'chromium';
 
   const manifest = readManifest();
@@ -413,7 +413,7 @@ async function build(browser, zip=false) {
   if (serviceWorker) {
     console.log(`Building background script ${serviceWorker} using esbuild`);
     await esbuild.build(
-        esbuildOptions(serviceWorker, browserDist(browser)),
+      esbuildOptions(serviceWorker, browserDist(browser)),
     );
   }
 
@@ -464,9 +464,9 @@ class FileWatcherContext {
     this.dispose();
     this.#abortController = new AbortController();
     fs.watch(
-        this.#file,
-        {signal: this.#abortController.signal},
-        this.#fileWatcherCallback.bind(this),
+      this.#file,
+      {signal: this.#abortController.signal},
+      this.#fileWatcherCallback.bind(this),
     );
   }
 
@@ -574,7 +574,7 @@ async function watch(browser) {
     for (const contentScript of contentScripts) {
       for (const script of contentScript.js) {
         const context = await esbuild.context(
-            esbuildOptions(script, browserDist(browser), reloadPlugin),
+          esbuildOptions(script, browserDist(browser), reloadPlugin),
         );
         await context.watch();
         contexts.push(context);
@@ -585,7 +585,7 @@ async function watch(browser) {
     const serviceWorker = manifest.background?.service_worker;
     if (serviceWorker) {
       const context = await esbuild.context(
-          esbuildOptions(serviceWorker, browserDist(browser), reloadPlugin),
+        esbuildOptions(serviceWorker, browserDist(browser), reloadPlugin),
       );
       await context.watch();
       contexts.push(context);
@@ -598,7 +598,7 @@ async function watch(browser) {
 
   // Listen for changes in the manifest file.
   new FileWatcherContext('manifest.json', async () => {
-    console.log(`Changes detected in 'manifest.json'. Rebuilding.`);
+    console.log('Changes detected in \'manifest.json\'. Rebuilding.');
     contexts.forEach((context) => context.dispose());
     cleanDirectory(browserDist(browser));
     await build(browser);
@@ -620,7 +620,7 @@ async function main() {
   if (args.length === 0) {
     // 'firefox-desktop' and 'firefox-android' share the same distributable.
     for (const browser of
-        /** @type{Array<Browser>} */ (['chromium', 'firefox'])) {
+    /** @type{Array<Browser>} */ (['chromium', 'firefox'])) {
       const buildMsg = `Building extension for target ${browser}:`;
       console.log(`\n${buildMsg}\n${'='.repeat(buildMsg.length)}`);
       await build(browser, true);

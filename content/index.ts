@@ -25,7 +25,7 @@ import {
   unilluminateUnderlines,
 } from './lib/underlines';
 import {createPointerEnterables, removePointerEnterables}
-from './lib/pointer-enterables';
+  from './lib/pointer-enterables';
 import {createTranslationBubble, removeTranslationBubbles}
   from './lib/translation-bubbles';
 import translateWord from './lib/translateWord';
@@ -81,14 +81,14 @@ async function main() {
   const underlineContainer =
       createScreenshotOverlay(video, subtitlePosition, 'underline-container');
   const translationBubbleContainer = createScreenshotOverlay(
-      video,
-      subtitlePosition,
-      'translation-bubble-container',
+    video,
+    subtitlePosition,
+    'translation-bubble-container',
   );
   const pointerEnterableContainer = createScreenshotOverlay(
-      video,
-      subtitlePosition,
-      'pointer-enterable-container',
+    video,
+    subtitlePosition,
+    'pointer-enterable-container',
   );
 
   const moviePlayer = await getMoviePlayer();
@@ -134,17 +134,17 @@ async function main() {
           (word) => word.text
         );
         translateWord(
-            sentence,
-            wordIndex,
-            lang,
+          sentence,
+          wordIndex,
+          lang,
         )
-            .then(
-              (translation) => bubble.innerHTML = translation
-            )
-            .catch(
-              (error: Error) => bubble.innerHTML =
+          .then(
+            (translation) => bubble.innerHTML = translation
+          )
+          .catch(
+            (error: Error) => bubble.innerHTML =
               `<div class="error">${error.name}: ${error.message}</div>`
-            );
+          );
       }
     }
   );
@@ -175,9 +175,9 @@ async function main() {
         previouslyOCRedText = data.text;
 
         const words = (data.confidence > 65) ?
-            data.words.filter(
-              (word) => isTranslatable(word.text)
-            ) : [];
+          data.words.filter(
+            (word) => isTranslatable(word.text)
+          ) : [];
 
         const screenshotDims = await getImageDimensions(textImage);
 

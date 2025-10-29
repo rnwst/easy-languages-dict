@@ -5,9 +5,9 @@
  * video.
  */
 export default function getSubtitlePosition(
-    language: string,
-    videoId: string,
-    publicationDate: Date,
+  language: string,
+  videoId: string,
+  publicationDate: Date,
 ) {
   const standardPosition = {
     top: 0.780,
@@ -30,15 +30,15 @@ export default function getSubtitlePosition(
       return standardPosition;
     }
     return (publicationDate >= switchDate) ?
-        standardPosition :
-        legacyPosition;
+      standardPosition :
+      legacyPosition;
   }
 
   if (language === 'french') {
     const switchDate = new Date('Jun 13, 2020');
     return (publicationDate >= switchDate) ?
-        standardPosition :
-        legacyPosition;
+      standardPosition :
+      legacyPosition;
   }
 
   if (language === 'spanish') {
@@ -68,8 +68,8 @@ export default function getSubtitlePosition(
     ];
     if (legacyExceptions.includes(videoId)) return mandarinLegacyPosition;
     return (publicationDate >= switchDate) ?
-        mandarinStandardPosition :
-        mandarinLegacyPosition;
+      mandarinStandardPosition :
+      mandarinLegacyPosition;
   }
 
   return standardPosition;

@@ -31,12 +31,12 @@ export function createTranslationBubble(
   // Set CSS custom properties. The positioning is then handled by the
   // injected stylesheet.
   bubble.style.setProperty(
-      '--dist-to-left-video-edge',
-      distToLeftVideoEdgeInEm.toPrecision(5) + 'em',
+    '--dist-to-left-video-edge',
+    distToLeftVideoEdgeInEm.toPrecision(5) + 'em',
   );
   bubble.style.setProperty(
-      '--dist-to-right-video-edge',
-      distToRightVideoEdgeInEm.toPrecision(5) + 'em',
+    '--dist-to-right-video-edge',
+    distToRightVideoEdgeInEm.toPrecision(5) + 'em',
   );
 
   // Fill bubble.

@@ -73,7 +73,7 @@ export function getVideo(): Promise<HTMLVideoElement> {
   // to-be-replaced video element does not have a 'src' attribute, and thus an
   // appropriate query selector is readily constructed.
   return waitForElt<HTMLVideoElement>(onMobile() ?
-      'video[src]' : '#movie_player video');
+    'video[src]' : '#movie_player video');
 }
 
 
@@ -188,7 +188,7 @@ hideBehindActivePlayerControls(pointerEnterableContainer: HTMLElement):
   // that the mutation observer is not removed along with the element it
   // observes if it is attached too early when changing videos.
   observer.observe(await waitForElt('#player-control-container'),
-      {attributes: true, subtree: true, attributeFilter: ['class']});
+    {attributes: true, subtree: true, attributeFilter: ['class']});
 
   // When the pointer-enterable container is removed from the DOM, the
   // MutationObserver is still going to have a reference to it. To allow the
@@ -254,5 +254,5 @@ export async function isPromiseResolved<T>(promise: Promise<T>):
     Promise<boolean> {
   const notAPromise = 'unlikely value';
   return Promise.race([promise, notAPromise])
-      .then((value) => (value !== notAPromise));
+    .then((value) => (value !== notAPromise));
 }

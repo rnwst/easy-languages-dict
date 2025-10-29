@@ -54,7 +54,7 @@ export function wordInTags(translation: string): string | undefined {
  */
 export function removePunctuation(wordWithPunctuation: string): string {
   return wordWithPunctuation
-      ?.match(/^(?<word>.*?)[.,:;?!]?$/)?.groups?.word ?? wordWithPunctuation;
+    ?.match(/^(?<word>.*?)[.,:;?!]?$/)?.groups?.word ?? wordWithPunctuation;
 }
 
 
@@ -70,7 +70,7 @@ async function translate(text: string, translator: string, langCode: string):
   };
   // Firefox supports usage of the `chrome` object for compatibility reasons.
   return chrome.runtime.sendMessage({text, translator, langCodes})
-      .then((response) => parseResponse(response));
+    .then((response) => parseResponse(response));
 }
 
 
@@ -90,24 +90,24 @@ export default async function translateWord(
   const word = escapeHTML(sentence[wordIndex]);
   const outOfContextTranslationPromise =
     translate(
-        word,
-        lang.defaultOutOfContextTranslator,
-        lang[lang.defaultOutOfContextTranslator + 'Code'],
+      word,
+      lang.defaultOutOfContextTranslator,
+      lang[lang.defaultOutOfContextTranslator + 'Code'],
     )
-        // To prevent XSS attacks if the server returns malicious content, we
-        // need to sanitize the response.
-        .then((translation) => escapeHTML(removePunctuation(translation)));
+    // To prevent XSS attacks if the server returns malicious content, we
+    // need to sanitize the response.
+      .then((translation) => escapeHTML(removePunctuation(translation)));
 
   const wordWithContext = wrapWordInTags(sentence, wordIndex);
   const inContextTranslationPromise =
     (sentence.length === 1) ?
     // If we are only translating one word, don't send two translation requests.
-    outOfContextTranslationPromise :
-    translate(
+      outOfContextTranslationPromise :
+      translate(
         wordWithContext,
         lang.defaultInContextTranslator,
         lang[lang.defaultInContextTranslator + 'Code'],
-    )
+      )
         .then((translation) => {
           // Google and Bing Translate frequently fail at contextual
           // translation. Google often returns a translation which doesn't

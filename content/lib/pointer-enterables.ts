@@ -26,15 +26,15 @@ export function createPointerEnterables(
 
     pointerEnterable.addEventListener('pointerenter', () => {
       easyLangsDictElts('.translation-bubble-container')[0]
-          .dispatchEvent(
-              new CustomEvent('translation-request', {
-                detail: {
-                  words,
-                  wordIndex,
-                  screenshotDims,
-                },
-              }),
-          );
+        .dispatchEvent(
+          new CustomEvent('translation-request', {
+            detail: {
+              words,
+              wordIndex,
+              screenshotDims,
+            },
+          }),
+        );
     });
 
     pointerEnterableContainer.appendChild(pointerEnterable);
@@ -47,5 +47,5 @@ export function createPointerEnterables(
  */
 export function removePointerEnterables() {
   easyLangsDictElts('.pointer-enterable')
-      .forEach((elt) => elt.remove());
+    .forEach((elt) => elt.remove());
 }

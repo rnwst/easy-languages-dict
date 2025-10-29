@@ -33,14 +33,14 @@ export default async function deepL(
 
   // The observant web developer will notice one or two seemingly random spaces
   // sprinkled into the raw JSON sent to the DeepL servers. They are not random.
-  body = ( (id + 3) % 13 == 0 || (id + 5) % 29 == 0 ) ?
+  body = ((id + 3) % 13 == 0 || (id + 5) % 29 == 0) ?
     body.replace('"method":"', '"method" : "') :
     body.replace('"method":"', '"method": "');
 
   const response = await fetch('https://www2.deepl.com/jsonrpc?client=chrome-extension,1.14.0', {
     method: 'POST',
     headers: {
-      'Authorization': 'None',
+      Authorization: 'None',
       'Content-Type': 'application/json; charset=utf-8',
     },
     referrer: 'https://www.deepl.com/',

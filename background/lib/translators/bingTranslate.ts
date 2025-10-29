@@ -25,7 +25,7 @@ async function fetchAuthData(): Promise<Record<string, string>> {
   authData.ig = translatePage.match(/IG:"(.*?)"/)?.[1] ?? '';
   authData.iid = translatePage.match(/data-iid="(.*?)"/)?.[1] ?? '';
   const abusePreventionHelper = JSON.parse(
-      translatePage.match(/params_AbusePreventionHelper = (.*?);/)?.[1]
+    translatePage.match(/params_AbusePreventionHelper = (.*?);/)?.[1]
       ??
       '{}');
   authData.token = abusePreventionHelper[1];
@@ -39,12 +39,12 @@ async function fetchAuthData(): Promise<Record<string, string>> {
  * Obtain authentication data for the Bing Translate API from storage if it has
  * previously been stored, otherwise fetch authentication data and store it.
  */
-async function getAuthData(refresh=false): Promise<Record<string, string>> {
+async function getAuthData(refresh = false): Promise<Record<string, string>> {
   const authDataStorageKey = 'bingTranslateAuthData';
   let authData = await getStoredData(authDataStorageKey) as
       Record<string, string> | undefined;
   if (!authData || refresh) {
-    authData= await fetchAuthData();
+    authData = await fetchAuthData();
     await storeData(authDataStorageKey, authData);
   }
   return authData;
@@ -70,20 +70,20 @@ async function requestTranslation(
   };
 
   const response = await fetch(
-      `https://www.bing.com/ttranslatev3?isVertical=1&IG=${authData.ig}` +
+    `https://www.bing.com/ttranslatev3?isVertical=1&IG=${authData.ig}` +
       `&IID=${authData.iid}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          // The User-agent needs to be set for testing purposes in node, as
-          // Bing Translate appears to have introduced UA checks in Jan 2024.
-          // PS: These checks appear to have been removed again in Feb 2024.
-          // Anyway, it's safest to keep setting the UA for testing.
-          'User-agent': navigator.userAgent,
-        },
-        body: new URLSearchParams(payload),
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        // The User-agent needs to be set for testing purposes in node, as
+        // Bing Translate appears to have introduced UA checks in Jan 2024.
+        // PS: These checks appear to have been removed again in Feb 2024.
+        // Anyway, it's safest to keep setting the UA for testing.
+        'User-agent': navigator.userAgent,
       },
+      body: new URLSearchParams(payload),
+    },
   );
 
   const responseData = await response.json();
