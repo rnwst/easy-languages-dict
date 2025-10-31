@@ -1,6 +1,8 @@
-import googleTranslate from './translators/googleTranslate';
-import bingTranslate from './translators/bingTranslate';
-import deepL from './translators/deepL';
+import googleTranslate from './translators/googleTranslate.js';
+import bingTranslate from './translators/bingTranslate.js';
+import deepL from './translators/deepL.js';
+import {TranslationRequest} from '../../content/lib/translateWord.js';
+import {JSONSerializable} from '../../types.js';
 
 
 /**
@@ -33,18 +35,28 @@ function getTranslatorFunction(
 }
 
 
+export type TranslationMsg = {
+  type: 'translation';
+  translation: string;
+};
+
+
+export type ErrorMsg = {
+  type: 'error';
+  name: string;
+  message: string;
+  code: string;
+};
+
+
 /**
  * Function registered as a listener in background script. Responds to
  * translation requests from content script.
  */
 export default function respondToTranslationRequest(
-  message: {
-    text: string;
-    translator: string;
-    langCodes: { from: string; to: string }
-  },
+  message: TranslationRequest,
   _: unknown,
-  sendResponse: (response) => void,
+  sendResponse: (response: JSONSerializable) => void,
 ): boolean {
   const text = message.text;
   const translate = getTranslatorFunction(message.translator);
@@ -71,7 +83,7 @@ export default function respondToTranslationRequest(
         sendResponse({
           type: 'translation',
           translation,
-        });
+        } as TranslationMsg);
       })
       .catch((error: Error & { code?: string }) => {
         console.error('An error occurred while attempting to translate ' +
@@ -85,7 +97,8 @@ export default function respondToTranslationRequest(
           type: 'error',
           name: error.name,
           message: error.message,
-        });
+          code: error.code,
+        } as ErrorMsg);
       });
   };
 

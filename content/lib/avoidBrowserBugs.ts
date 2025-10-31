@@ -1,4 +1,4 @@
-import {waitForElt, getMoviePlayer} from './utils';
+import {waitForElt, getMoviePlayer} from './utils.js';
 
 
 /**

@@ -1,4 +1,4 @@
-import {createElement, easyLangsDictElts} from './utils';
+import {createElement, easyLangsDictElts} from './utils.js';
 
 
 /**
@@ -6,7 +6,7 @@ import {createElement, easyLangsDictElts} from './utils';
  * listeners, which create corresponding translation bubbles.
  */
 export function createPointerEnterables(
-  words,
+  words: Tesseract.Word[],
   screenshotDims: { width: number; height: number },
 ) {
   const pointerEnterableContainer =

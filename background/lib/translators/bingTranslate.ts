@@ -3,7 +3,7 @@ Inspired by the `POST` requests made by `bing.com/translator`.
 */
 
 
-import {getStoredData, storeData, isPromiseResolved} from '../utils';
+import {getStoredData, storeData, isPromiseResolved} from '../utils.js';
 
 
 // Promise used to prevent authentication data from being fetched twice if two
@@ -93,7 +93,7 @@ async function requestTranslation(
   // the request is successful, `responseData` has no `statusCode` property.
   const statusCode = responseData.statusCode || response.status;
   if (statusCode != 200) {
-    throw new Error(`Received status code ${statusCode} from Bing Translate.`);
+    throw new Error(`Received status code ${statusCode} from Bing Translate. Response data:\n${JSON.stringify(responseData)}`);
   } else {
     return responseData[0].translations[0].text;
   }

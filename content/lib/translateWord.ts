@@ -1,3 +1,6 @@
+import {ErrorMsg, TranslationMsg}
+  from '../../background/lib/respondToTranslationRequest.js';
+
 /**
  * Escape potential HTML.
  */
@@ -26,14 +29,14 @@ function wrapWordInTags(sentence: string[], wordIndex: number): string {
  * can be sent by the background script, we need to transform the response
  * received back into its original form (either a translation or an error).
  */
-export function parseResponse(response): string {
+export function parseResponse(response: TranslationMsg | ErrorMsg): string {
   if (response.type === 'translation') {
     return response.translation;
-  } else if (response.type === 'error') {
+  } else {
     console.log(response);
-    const error: Error & { code?: string } = new Error(response.message);
-    error.name = response.name;
-    error.code = response.code;
+    const error: Error & { code?: string } = new Error(response?.message);
+    error.name = response?.name;
+    error.code = response?.code;
     throw error;
   }
 }
@@ -58,6 +61,16 @@ export function removePunctuation(wordWithPunctuation: string): string {
 }
 
 
+export type TranslationRequest = {
+  text: string;
+  translator: string;
+  langCodes: {
+    from: string;
+    to: string;
+  };
+};
+
+
 /**
  * Translate text by making a request to the background script and parsing the
  * response (and dealing with potential errors).
@@ -69,8 +82,9 @@ async function translate(text: string, translator: string, langCode: string):
     to: (translator === 'deepL') ? 'EN' : 'en',
   };
   // Firefox supports usage of the `chrome` object for compatibility reasons.
-  return chrome.runtime.sendMessage({text, translator, langCodes})
-    .then((response) => parseResponse(response));
+  return chrome.runtime.sendMessage(
+    {text, translator, langCodes} as TranslationRequest
+  ).then((response) => parseResponse(response));
 }
 
 

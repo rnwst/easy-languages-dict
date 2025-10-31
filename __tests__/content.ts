@@ -1,9 +1,9 @@
 import * as fs from 'fs';
 
-import {parseCSV} from '../content/lib/readLangsDotCSV';
+import {parseCSV} from '../content/lib/readLangsDotCSV.js';
 import translateWord, {
   removePunctuation,
-} from '../content/lib/translateWord';
+} from '../content/lib/translateWord.js';
 
 
 describe('getLang', () => {
@@ -11,13 +11,13 @@ describe('getLang', () => {
     runtime: {
       getURL: () => '',
     },
-  };
+  } as unknown as typeof chrome;
 
   global.fetch = () => Promise.resolve({
     text: () => fs.readFileSync('langs.csv').toString(),
-  });
+  })as unknown as Promise<Response>;
 
-  jest.mock('../content/lib/getVideoMetadata', () => {
+  jest.mock('../content/lib/getVideoMetadata.js', () => {
     return Promise.resolve({
       channelHandle: '',
       title: '',
@@ -27,7 +27,7 @@ describe('getLang', () => {
   // Need to import function using `require` after `getVideoMetadata` has been
   // mocked, as it is executed on import.
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const {extractLangFromTitle} = require('../content/lib/getLang');
+  const {extractLangFromTitle} = require('../content/lib/getLang.js');
 
   describe('extractLangFromTitle', () => {
     it('extracts language from video title', () => {
@@ -75,7 +75,7 @@ describe('translateWord', () => {
     runtime: {
       sendMessage: () => Promise.resolve('test'),
     },
-  };
+  } as unknown as typeof chrome;
 
   describe('removePunctuation', () => {
     it('removes punctuation', () => {
@@ -94,16 +94,18 @@ describe('translateWord', () => {
   describe('translateWord', () => {
     it('only sends one request for one word sentence', async () => {
       const sendMessageSpy = jest.spyOn(global.chrome.runtime, 'sendMessage');
-      await translateWord(
-        ['Cześć!'],
-        0,
-        {
-          name: 'polish',
-          defaultOutOfContextTranslator: 'bing',
-          defaultInContextTranslator: 'bing',
-          bingCode: 'pl',
-        },
-      );
+      try {
+        await translateWord(
+          ['Cześć!'],
+          0,
+          {
+            name: 'polish',
+            defaultOutOfContextTranslator: 'bing',
+            defaultInContextTranslator: 'bing',
+            bingCode: 'pl',
+          },
+        );
+      } catch (e) {};
       expect(sendMessageSpy).toHaveBeenCalledTimes(1);
     });
   });

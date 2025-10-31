@@ -1,5 +1,5 @@
-import {createElement} from './utils';
-import {FONT_SIZE_VIDEO_HEIGHT_FRACTION} from './constants';
+import {createElement} from './utils.js';
+import {FONT_SIZE_VIDEO_HEIGHT_FRACTION} from './constants.js';
 
 
 /**

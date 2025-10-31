@@ -10,9 +10,9 @@
  * need to be used here, so that they work on the `chrome` object both in
  * Firefox MV2 as well as Chromium MV3.
  */
-export async function getStoredData(key: string): Promise<object> {
+export async function getStoredData(key: string): Promise<unknown> {
   return new Promise((resolve) => {
-    chrome.storage.local.get(key, (data) => resolve((data)[key]));
+    chrome.storage.local.get(key, (data) => resolve(data[key]));
   });
 }
 
@@ -21,9 +21,9 @@ export async function getStoredData(key: string): Promise<object> {
  * Store data in local storage. See notes above regarding use of the
  * callback-based API.
  */
-export async function storeData(key: string, data: object): Promise<true> {
+export async function storeData(key: string, data: object): Promise<void> {
   return new Promise((resolve) => {
-    chrome.storage.local.set({[key]: data}, () => resolve(true));
+    chrome.storage.local.set({[key]: data}, () => resolve());
   });
 }
 

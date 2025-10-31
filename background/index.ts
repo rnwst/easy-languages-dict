@@ -9,8 +9,8 @@ scripts about changes to the URL performed with `history.pushState()`.
 */
 
 
-import respondToTranslationRequest from './lib/respondToTranslationRequest';
-import notifyAboutURLChange from './lib/notifyAboutURLChange';
+import respondToTranslationRequest from './lib/respondToTranslationRequest.js';
+import notifyAboutURLChange from './lib/notifyAboutURLChange.js';
 
 
 chrome.runtime.onMessage.addListener(respondToTranslationRequest);

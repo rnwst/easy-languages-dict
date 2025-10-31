@@ -1,4 +1,4 @@
-import {easyLangsDictElts, createElement} from './utils';
+import {easyLangsDictElts, createElement} from './utils.js';
 
 
 /**

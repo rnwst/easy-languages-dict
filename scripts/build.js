@@ -4,6 +4,7 @@
 import esbuild from 'esbuild';
 import fs from 'fs';
 import path from 'path';
+import ts from "typescript";
 import crypto from 'crypto';
 import webExt from 'web-ext';
 // See https://github.com/import-js/eslint-plugin-import/issues/1810.
@@ -313,6 +314,47 @@ async function buildIcon(icon, size, distDir) {
 function esbuildOptions(entryPoint, distDir, plugin) {
   const outfile = path.join(distDir, entryPoint);
 
+  /** @type {ESBuildPlugin} */
+  const typeScriptPlugin = {
+    name: "typecheck",
+    setup(build) {
+      build.onStart(() => {
+        const parsedConfig = ts.parseJsonConfigFileContent(
+          JSON.parse(fs.readFileSync('tsconfig.json').toString()),
+          ts.sys,
+          '.',
+        );
+
+        const program = ts.createProgram({
+          rootNames: parsedConfig.fileNames,
+          options: parsedConfig.options,
+        });
+
+        const diagnostics = ts
+          .getPreEmitDiagnostics(program)
+          .filter((d) => d.category === ts.DiagnosticCategory.Error);
+
+        if (diagnostics.length) {
+          const formatted = ts.formatDiagnosticsWithColorAndContext(diagnostics, {
+            getCanonicalFileName: (f) => f,
+            getCurrentDirectory: ts.sys.getCurrentDirectory,
+            getNewLine: () => ts.sys.newLine,
+          });
+
+          console.error("\n[typecheck] TypeScript errors:\n" + formatted);
+
+          return {
+            errors: [
+              {
+                text: "See TypeScript errors above.",
+              },
+            ],
+          };
+        }
+      });
+    },
+  };
+
   // Tesseract.js includes a reference to remotely hosted code
   // (`worker.min.js`). Remotely hosted code is disallowed in the Chrome Web
   // Store for MV3 extensions. The code never actually loads the remote
@@ -320,7 +362,6 @@ function esbuildOptions(entryPoint, distDir, plugin) {
   // a violation anyway, likely using a simple search for a CDN URL in the
   // source files. The remote URL is partially removed, to avoid rejection by
   // the Chrome Web Store.
-
   /** @type ESBuildPlugin */
   const removeRemoteCodeRefs = {
     name: 'remove remote code references extension',
@@ -346,16 +387,21 @@ function esbuildOptions(entryPoint, distDir, plugin) {
     outfile,
     minify: true,
     sourcemap: 'inline',
-    plugins: [removeRemoteCodeRefs, ...(plugin ? [plugin] : [])],
+    plugins: [
+      typeScriptPlugin,
+      removeRemoteCodeRefs,
+      ...(plugin ? [plugin] : [])],
     logLevel: 'warning',
   };
 }
 
 
 /**
+ * Create a ZIP archive from the specified directory, and store it at the
+ * specified path.
  * @param {string} sourceDir - Folder to compress
  * @param {string} outPath - Output path (ZIP file)
- * @return {promise}
+ * @return {Promise<void>}
  */
 function zipDirectory(sourceDir, outPath) {
   const archive = archiver('zip', {zlib: {level: 9}});
@@ -537,8 +583,6 @@ async function watch(browser) {
         sync(file, browserDist(browser));
         extensionRunner.reloadAllExtensions();
       });
-      // The contexts created by esbuild have a `dispose` method. To allow for
-      // termination of all contexts using this method, we add one here as well.
       contexts.push(context);
     });
 
@@ -599,6 +643,9 @@ async function watch(browser) {
   // Listen for changes in the manifest file.
   new FileWatcherContext('manifest.json', async () => {
     console.log('Changes detected in \'manifest.json\'. Rebuilding.');
+    // The contexts created by esbuild have a `dispose` method. To allow for
+    // termination of all contexts using this method, `FileWatcherContext` has
+    // this method too.
     contexts.forEach((context) => context.dispose());
     cleanDirectory(browserDist(browser));
     await build(browser);

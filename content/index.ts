@@ -12,24 +12,25 @@ import {
   isTranslatable,
   getImageDimensions,
   isPromiseResolved,
-} from './lib/utils';
-import getVideoMetadata from './lib/getVideoMetadata';
-import getLang from './lib/getLang';
-import createOCRWorker from './lib/createOCRWorker';
-import getSubtitlePosition from './lib/getSubtitlePosition';
-import {createScreenshotOverlay, takeScreenshots} from './lib/screenshot';
+} from './lib/utils.js';
+import getVideoMetadata from './lib/getVideoMetadata.js';
+import getLang from './lib/getLang.js';
+import createOCRWorker from './lib/createOCRWorker.js';
+import getSubtitlePosition from './lib/getSubtitlePosition.js';
+import {createScreenshotOverlay, takeScreenshots} from './lib/screenshot.js';
 import {
   createUnderlines,
   removeUnderlines,
   illuminateUnderline,
   unilluminateUnderlines,
-} from './lib/underlines';
+} from './lib/underlines.js';
 import {createPointerEnterables, removePointerEnterables}
-  from './lib/pointer-enterables';
+  from './lib/pointer-enterables.js';
 import {createTranslationBubble, removeTranslationBubbles}
-  from './lib/translation-bubbles';
-import translateWord from './lib/translateWord';
-import avoidBrowserBugs from './lib/avoidBrowserBugs';
+  from './lib/translation-bubbles.js';
+import type {WidthHeight} from './lib/translation-bubbles.js';
+import translateWord from './lib/translateWord.js';
+import avoidBrowserBugs from './lib/avoidBrowserBugs.js';
 
 
 // YouTube is a single-page app, and updates URLs using `history.pushState`.
@@ -122,7 +123,9 @@ async function main() {
     'translation-request',
     (evt: Event) => {
       const customEvent = evt as
-          CustomEvent<{words; wordIndex: number; screenshotDims}>;
+          CustomEvent<{words: Tesseract.Word[];
+                       wordIndex: number;
+                       screenshotDims: WidthHeight}>;
       if (document.contains(translationBubbleContainer)) {
         removeTranslationBubbles();
         unilluminateUnderlines();

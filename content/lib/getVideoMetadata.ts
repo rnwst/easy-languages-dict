@@ -1,6 +1,6 @@
 import {KNOWN_INNERTUBE_API_KEY, KNOWN_WEB_CLIENT_VERSION}
-  from './constants';
-import {onMobile} from './utils';
+  from './constants.js';
+import {onMobile} from './utils.js';
 
 
 /**

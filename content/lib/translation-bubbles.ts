@@ -1,15 +1,21 @@
 import {
   createElement,
   easyLangsDictElts,
-} from './utils';
+} from './utils.js';
+
+
+export type WidthHeight = {
+  width: number,
+  height: number,
+}
 
 
 /**
  * Create translation bubble.
  */
 export function createTranslationBubble(
-  word,
-  screenshotDims: { width: number; height: number },
+  word: Tesseract.Word,
+  screenshotDims: WidthHeight,
 ): HTMLDivElement {
   const bubble = createElement('translation-bubble');
 

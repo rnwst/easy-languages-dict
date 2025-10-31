@@ -1,4 +1,4 @@
-import {timeout, getVideo} from './utils';
+import {timeout, getVideo} from './utils.js';
 
 
 /**

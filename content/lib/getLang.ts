@@ -1,4 +1,4 @@
-import readLangsDotCSV from './readLangsDotCSV';
+import readLangsDotCSV from './readLangsDotCSV.js';
 
 
 /**

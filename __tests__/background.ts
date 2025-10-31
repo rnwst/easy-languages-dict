@@ -1,7 +1,7 @@
-import googleTranslate from '../background/lib/translators/googleTranslate';
-import bingTranslate from '../background/lib/translators/bingTranslate';
-import deepL from '../background/lib/translators/deepL';
-import * as utils from '../background/lib/utils';
+import googleTranslate from '../background/lib/translators/googleTranslate.js';
+import bingTranslate from '../background/lib/translators/bingTranslate.js';
+import deepL from '../background/lib/translators/deepL.js';
+import * as utils from '../background/lib/utils.js';
 
 
 describe('translators', () => {
@@ -9,7 +9,8 @@ describe('translators', () => {
   // 'Mozilla/5.0 (linux) AppleWebKit/537.36 (KHTML, like Gecko) jsdom/20.0.3'.
   // It seems to work fine, but I think it's safest to match the typical browser
   // as closely as possible.
-  global.navigator.__defineGetter__('userAgent', () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (global.navigator as any).__defineGetter__('userAgent', () => {
     return 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
            '(KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36';
   });

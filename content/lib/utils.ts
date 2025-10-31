@@ -1,4 +1,4 @@
-import {rewind, fastfwd} from './seek';
+import {rewind, fastfwd} from './seek.js';
 
 
 /**
