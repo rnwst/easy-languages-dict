@@ -105,7 +105,9 @@ describe('translateWord', () => {
             bingCode: 'pl',
           },
         );
-      } catch (e) {};
+      } catch {
+        // Without a response from `sendMessage`, an error will be thrown.
+      };
       expect(sendMessageSpy).toHaveBeenCalledTimes(1);
     });
   });

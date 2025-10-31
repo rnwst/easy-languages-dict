@@ -93,7 +93,10 @@ async function requestTranslation(
   // the request is successful, `responseData` has no `statusCode` property.
   const statusCode = responseData.statusCode || response.status;
   if (statusCode != 200) {
-    throw new Error(`Received status code ${statusCode} from Bing Translate. Response data:\n${JSON.stringify(responseData)}`);
+    throw new Error(
+      `Received status code ${statusCode} from Bing Translate.\n` +
+      `Response data:\n${JSON.stringify(responseData)}`
+    );
   } else {
     return responseData[0].translations[0].text;
   }

@@ -4,7 +4,7 @@
 import esbuild from 'esbuild';
 import fs from 'fs';
 import path from 'path';
-import ts from "typescript";
+import ts from 'typescript';
 import crypto from 'crypto';
 import webExt from 'web-ext';
 // See https://github.com/import-js/eslint-plugin-import/issues/1810.
@@ -316,7 +316,7 @@ function esbuildOptions(entryPoint, distDir, plugin) {
 
   /** @type {ESBuildPlugin} */
   const typeScriptPlugin = {
-    name: "typecheck",
+    name: 'typecheck',
     setup(build) {
       build.onStart(() => {
         const parsedConfig = ts.parseJsonConfigFileContent(
@@ -335,18 +335,21 @@ function esbuildOptions(entryPoint, distDir, plugin) {
           .filter((d) => d.category === ts.DiagnosticCategory.Error);
 
         if (diagnostics.length) {
-          const formatted = ts.formatDiagnosticsWithColorAndContext(diagnostics, {
-            getCanonicalFileName: (f) => f,
-            getCurrentDirectory: ts.sys.getCurrentDirectory,
-            getNewLine: () => ts.sys.newLine,
-          });
+          const formatted = ts.formatDiagnosticsWithColorAndContext(
+            diagnostics,
+            {
+              getCanonicalFileName: (f) => f,
+              getCurrentDirectory: ts.sys.getCurrentDirectory,
+              getNewLine: () => ts.sys.newLine,
+            }
+          );
 
-          console.error("\n[typecheck] TypeScript errors:\n" + formatted);
+          console.error('\n[typecheck] TypeScript errors:\n' + formatted);
 
           return {
             errors: [
               {
-                text: "See TypeScript errors above.",
+                text: 'See TypeScript errors above.',
               },
             ],
           };
