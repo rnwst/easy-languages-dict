@@ -1,0 +1,43 @@
+---
+repos:
+  - repo: local
+    hooks:
+
+      - id: eslint
+        name: ESLint
+        description: Performs static analysis with ESLint.
+        entry: npx eslint .
+        language: system
+        files: ^(.*\.js|.*\.ts)$
+        pass_filenames: false
+
+      - id: stylelint
+        name: Stylelint
+        description: Lints CSS files.
+        entry: npx stylelint
+        language: system
+        files: ^.*\.css$
+
+      - id: build
+        name: Build
+        description: Build extension, and check for type errors.
+        entry: node scripts/build
+        language: system
+        files: ^(.*\.js|.*\.ts|manifest\.json)$
+        pass_filenames: false
+
+      - id: lint-web-ext
+        name: Web-ext lint
+        description: Run `web-ext lint` on Firefox distributable.
+        entry: npx web-ext lint --source-dir dist/firefox
+        language: system
+        files: ^(.*\.js|.*\.ts|manifest\.json)$
+        pass_filenames: false
+
+      - id: tests
+        name: Tests
+        description: Run tests.
+        entry: npx jest --verbose
+        language: system
+        files: ^(.*\.js|.*\.ts)$
+        pass_filenames: false
