@@ -1,0 +1,31 @@
+name: Build
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - '**/*.ts'
+      - '**/*.js'
+      - 'manifest.json'
+      - 'package.json'
+      - 'package-lock.json'
+  pull_request:
+    paths:
+      - '**/*.ts'
+      - '**/*.js'
+      - 'manifest.json'
+      - 'package.json'
+      - 'package-lock.json'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./.github/actions/setup
+      - run: npm run build
+      - name: Upload Firefox artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-firefox
+          path: dist/firefox
