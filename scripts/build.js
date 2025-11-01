@@ -294,9 +294,12 @@ async function buildIcon(icon, size, distDir) {
     // https://bugs.chromium.org/p/chromium/issues/detail?id=29683.
     console.log(
       `Converting ${svgIcon} to PNG and writing to dist`);
+    const puppeteerLaunchOptions = {executablePath};
+    // Needed for puppeteer to work in GitHub workflows.
+    if (process.env.CI) puppeteerLaunchOptions.args = ['--no-sandbox'];
     const png =
         await svg2png(optimizedSVGStr, {
-          launch: {executablePath},
+          launch: puppeteerLaunchOptions,
           width: size,
           height: size
         });

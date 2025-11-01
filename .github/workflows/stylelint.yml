@@ -1,0 +1,25 @@
+name: Stylelint
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - '**/*.css'
+      - '.stylelintrc.json'
+      - 'package.json'
+      - 'package-lock.json'
+  pull_request:
+    paths:
+      - '**/*.css'
+      - '.stylelintrc.json'
+      - 'package.json'
+      - 'package-lock.json'
+  workflow_dispatch:
+
+jobs:
+  stylelint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: npx stylelint '**/*.css'

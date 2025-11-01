@@ -1,0 +1,27 @@
+name: ESLint
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - '**/*.ts'
+      - '**/*.js'
+      - 'eslint.config.js'
+      - 'package.json'
+      - 'package-lock.json'
+  pull_request:
+    paths:
+      - '**/*.ts'
+      - '**/*.js'
+      - 'eslint.config.js'
+      - 'package.json'
+      - 'package-lock.json'
+  workflow_dispatch:
+
+jobs:
+  eslint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: npx eslint .

@@ -1,0 +1,11 @@
+name: Setup Node Environment
+description: Prepare repository, Node, and dependencies.
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: latest
+        cache: npm
+    - shell: bash
+      run: npm ci

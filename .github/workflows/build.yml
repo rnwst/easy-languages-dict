@@ -1,0 +1,47 @@
+name: Build and run web-ext lint
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - '**/*.ts'
+      - '**/*.js'
+      - 'manifest.json'
+      - 'package.json'
+      - 'package-lock.json'
+  pull_request:
+    paths:
+      - '**/*.ts'
+      - '**/*.js'
+      - 'manifest.json'
+      - 'package.json'
+      - 'package-lock.json'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build extension
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: npm run build
+      - name: Upload Firefox artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-firefox
+          path: dist/firefox
+  webext-lint:
+    name: Run web-ext lint
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Download Firefox artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-firefox
+          path: dist/firefox
+      - name: Lint Firefox build
+        run: 'npx web-ext lint --source-dir dist/firefox'
