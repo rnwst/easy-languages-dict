@@ -14,7 +14,7 @@
   "content_scripts": [
     {
       "matches": ["https://www.youtube.com/*", "https://m.youtube.com/*"],
-      "js": ["content/index.js"],
+      "js": ["content/main.js"],
       "run_at": "document_end",
       "css": ["content/styles.css"]
     }
@@ -22,7 +22,7 @@
 
   "background": {
     "type": "module",
-    "service_worker": "background/index.js"
+    "service_worker": "background/main.js"
   },
 
   "permissions": [
