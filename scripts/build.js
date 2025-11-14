@@ -218,7 +218,7 @@ function getFilesToBeSynced(manifest) {
   // Content script CSS (the JS will be taken care of by the bundler).
   const contentScripts = manifest.content_scripts;
   for (const contentScript of contentScripts) {
-    if (contentScript.css.length) {
+    if (contentScript.css?.length) {
       files.push(...contentScript.css);
     }
   }
