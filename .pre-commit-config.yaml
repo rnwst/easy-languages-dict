@@ -34,6 +34,14 @@ repos:
         files: ^(.*\.js|.*\.ts|manifest\.json)$
         pass_filenames: false
 
+      - id: type-check
+        name: Type checking
+        description: Tests are not type-check during the build stage, so we need to run `tsc` separately.
+        entry: tsc
+        language: system
+        files: ^(.*\.js|.*\.ts)$
+        pass_filenames: false
+
       - id: tests
         name: Tests
         description: Run tests.

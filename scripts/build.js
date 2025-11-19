@@ -319,14 +319,14 @@ function esbuildOptions(entryPoint, distDir, plugin) {
 
   /** @type {ESBuildPlugin} */
   const typeScriptPlugin = {
-    name: 'typecheck',
+    name: 'type-check',
     setup(build) {
       build.onStart(() => {
-        const parsedConfig = ts.parseJsonConfigFileContent(
-          JSON.parse(fs.readFileSync('tsconfig.json').toString()),
-          ts.sys,
-          '.',
-        );
+        const config = JSON.parse(fs.readFileSync('tsconfig.json').toString());
+        // For building purposes, ignore tests.
+        config.exclude = (config.exclude ?? []).concat(['__tests__']);
+        const parsedConfig =
+          ts.parseJsonConfigFileContent(config, ts.sys, '.',);
 
         const program = ts.createProgram({
           rootNames: parsedConfig.fileNames,
