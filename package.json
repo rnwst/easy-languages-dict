@@ -11,18 +11,18 @@
     "start-firefox-desktop": "node scripts/build watch firefox-desktop",
     "start-firefox-android": "node scripts/build watch firefox-android",
     "test": "jest --verbose",
+    "type-check": "tsc --noEmit",
+    "test-browser": "node --test __tests__/browser/chromium.test.mjs",
     "test-coverage": "jest --coverage"
   },
   "license": "GPL-2.0-or-later",
-  "dependencies": {
-    "tesseract.js": "^5.0.4"
-  },
   "devDependencies": {
     "@babel/plugin-transform-modules-commonjs": "^7.27.1",
     "@babel/preset-env": "^7.28.5",
     "@babel/preset-typescript": "^7.28.5",
     "@types/chrome": "^0.1.24",
     "@types/jest": "^30.0.0",
+    "@types/node": "20.11.6",
     "archiver": "^7.0.1",
     "convert-svg-to-png": "^0.7.1",
     "esbuild": "^0.25.11",
@@ -39,6 +39,7 @@
     "stylelint": "^16.25.0",
     "stylelint-config-standard": "^39.0.1",
     "svgo": "^4.0.0",
+    "typescript": "5.3.3",
     "typescript-eslint": "^8.46.2",
     "web-ext": "^9.1.0"
   }

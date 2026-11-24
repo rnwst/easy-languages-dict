@@ -1,3 +1,5 @@
+import {BingTranslatorRequest} from '../../../types.js';
+
 /**
 Inspired by the `POST` requests made by `bing.com/translator`.
 */
@@ -55,15 +57,14 @@ async function getAuthData(refresh = false): Promise<Record<string, string>> {
  * Send translation request to Bing Translate API and parse response.
  */
 async function requestTranslation(
-  text: string,
-  options: Record<string, string>,
+  request: Omit<BingTranslatorRequest, 'translator'>
 ): Promise<string> {
   const authData = await authDataPromise!;
 
   const payload: Record<string, string> = {
-    fromLang: options.from,
-    text,
-    to: options.to,
+    fromLang: request.langCodes.from,
+    text: request.text,
+    to: request.langCodes.to,
     token: authData.token,
     key: authData.key,
     tryFetchingGenderDebiasedTranslations: 'true',
@@ -107,14 +108,13 @@ async function requestTranslation(
  * Translate text with the Bing Translate API.
  */
 export default async function bingTranslate(
-  text: string,
-  options: { from: string; to: string },
+  request: Omit<BingTranslatorRequest, 'translator'>
 ): Promise<string> {
   if (!authDataPromise) authDataPromise = getAuthData();
 
   let translation: string;
   try {
-    translation = await requestTranslation(text, options);
+    translation = await requestTranslation(request);
   } catch (error) {
     // Most likely, the authentication data has expired. Obtain new
     // authentication data, and try one more time. If another instance of this
@@ -124,7 +124,7 @@ export default async function bingTranslate(
       console.warn(`${error}\nUpdating auth data and trying again.`);
       authDataPromise = getAuthData(true);
     }
-    translation = await requestTranslation(text, options);
+    translation = await requestTranslation(request);
   }
 
   return translation;

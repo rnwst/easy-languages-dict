@@ -4,6 +4,7 @@
 import esbuild from 'esbuild';
 import fs from 'fs';
 import path from 'path';
+import {fileURLToPath} from 'url';
 import ts from 'typescript';
 import crypto from 'crypto';
 import webExt from 'web-ext';
@@ -13,6 +14,7 @@ import {optimize as optimizeSVG} from 'svgo';
 import {convert as svg2png} from 'convert-svg-to-png';
 import {executablePath} from 'puppeteer';
 import archiver from 'archiver';
+import {watchBuild, refreshDevelopmentTabs} from './watch-build.js';
 
 
 const dist = 'dist/';
@@ -116,7 +118,10 @@ function convertMV3ToMV2(manifestV3) {
   ]) {
     manifestV2[key] = manifestV3[key];
   }
+  manifestV2.background = {...manifestV3.background};
   manifestV2.background.scripts = [manifestV3.background.service_worker];
+  delete manifestV2.background.service_worker;
+  delete manifestV2.background.type;
   // Background scripts in MV3 are always non-persistent, but can be persistent
   // in MV2 (non-persistent background scripts are sometimes referred to as
   // 'event pages'). They should not be persistent on Firefox on Android:
@@ -149,61 +154,21 @@ function adaptManifestToBrowser(manifest, browser) {
     // https://bugs.chromium.org/p/chromium/issues/detail?id=29683.
     for (const size in chromiumManifest?.icons) {
       if (size) {
-        chromiumManifest.icons[size] =
-            chromiumManifest.icons[size].replace(/\.svg$/, '.png');
+        chromiumManifest.icons[size] = path.join(
+          path.dirname(chromiumManifest.icons[size]), `${size}.png`,
+        );
       }
     }
     return chromiumManifest;
   }
   if (browser.match('firefox')) {
-    // I don't consider Firefox's version of MV3 useable yet. All permissions
-    // are optional, and the user is not automatically prompted for those
-    // permissions. The extension therefore doesn't work due to a lack of
-    // required permissions, and the user is left wondering why. In addition,
-    // MV3 is not (yet) supported on Firefox for Android.
+    // This project currently uses an MV2 background script for Firefox.
+    // Moving that build to MV3 needs separate compatibility testing; Firefox
+    // supports MV3, but its background and permission behavior differs.
     const firefoxManifest = convertMV3ToMV2(manifest);
-    // Firefox only wants a 48x48px icon, and luckily accepts SVGs.
+    // Firefox scales the shared SVG source to the requested icon size.
     delete firefoxManifest.icons['128'];
     return firefoxManifest;
-  }
-}
-
-
-/**
- * @param {string} distDir - Output directory
- */
-function copyTesseractFiles(distDir) {
-  console.log('Copying Tesseract.js files');
-  const tesseractFiles = [
-    'node_modules/tesseract.js/dist/worker.min.js',
-    'node_modules/tesseract.js/dist/worker.min.js.map',
-  ];
-  const tesseractCoreFiles = [
-    'node_modules/tesseract.js-core/tesseract-core-lstm.wasm.js',
-    'node_modules/tesseract.js-core/tesseract-core-simd-lstm.wasm.js',
-  ];
-  for (const [dir, files] of /** @type [String, String[]][] */ ([
-    ['tesseract', tesseractFiles],
-    ['tesseract-core', tesseractCoreFiles],
-  ])) {
-    const targetDir = path.join(distDir, 'content', dir);
-    fs.mkdirSync(targetDir, {recursive: true});
-    files.forEach((file) => {
-      const targetFile = path.join(targetDir, path.basename(file));
-      fs.copyFileSync(file, targetFile);
-      // `worker.min.js` includes a reference to remotely hosted code
-      // (tesseract.js-core files). Remotely hosted code is disallowed in the
-      // Chrome Web Store for MV3 extensions. The code never actually loads the
-      // remote resource, as it is included in the bundle, but the Chrome Web
-      // Store detects a violation anyway, likely using a simple search for a
-      // CDN URL in the source files. The remote URL is partially removed, to
-      // avoid rejection by the Chrome Web Store.
-      if (path.basename(file) === 'worker.min.js') {
-        fs.writeFileSync(targetFile, fs.readFileSync(targetFile).toString()
-          .replaceAll('https://cdn.jsdelivr.net', ''),
-        );
-      }
-    });
   }
 }
 
@@ -226,9 +191,7 @@ function getFilesToBeSynced(manifest) {
   const webAccessibleResources = manifest.web_accessible_resources;
   for (const webAccessibleResource of webAccessibleResources) {
     for (const resource of webAccessibleResource.resources) {
-      // Don't attempt to sync the tesseract files, as they are copied
-      // separately.
-      if (!resource.match('tesseract')) files.push(resource);
+      files.push(resource);
     }
   }
   return files;
@@ -245,11 +208,9 @@ function hashFile(file) {
 
 
 /**
- * Sync a file in the `dist/` directory with its equivalent in the root
- * directory. Create it if it doesn't exist (along with its parent directories,
- * if they also don't exist). Overwrite the file if it does exist and its
- * contents have changed. Delete the file if its equivalent in the root
- * directory is no longer present.
+ * Copy a resource into the output directory when it is missing or has changed.
+ * A missing source file fails the build, so the development browser keeps the
+ * previous complete extension instead of loading an incomplete replacement.
  * @param {string} file - File to be synced
  * @param {string} distDir - Directory of output file
  */
@@ -263,7 +224,7 @@ function sync(file, distDir) {
       fs.copyFileSync(file, targetFile);
     }
   } else {
-    console.warn(`Attempting to copy ${file}, but it doesn't exist!`);
+    throw new Error(`Cannot copy missing extension resource: ${file}`);
   }
 }
 
@@ -271,14 +232,14 @@ function sync(file, distDir) {
 /**
  * For Firefox, which accepts SVG icons, optimize SVGs before copying, and for
  * Chromium, which doesn't accept SVGs, convert SVGs to PNGs.
- * @param {string} icon - Icon file
+ * @param {string} svgIcon - Editable SVG source, shared across output sizes
+ * @param {string} icon - Output icon file
  * @param {string} size - Icon size in pixels
  * @param {string} distDir - Directory of output file
  */
-async function buildIcon(icon, size, distDir) {
+async function buildIcon(svgIcon, icon, size, distDir) {
   const regex = /\.(?<ext>(svg|png))$/;
   const fileEnding = icon.match(regex).groups['ext'];
-  const svgIcon = icon.replace(regex, '.svg');
 
   const svgStr = fs.readFileSync(svgIcon, 'utf-8');
   const optimizedSVGStr = optimizeSVG(svgStr).data;
@@ -361,27 +322,6 @@ function esbuildOptions(entryPoint, distDir, plugin) {
     },
   };
 
-  // Tesseract.js includes a reference to remotely hosted code
-  // (`worker.min.js`). Remotely hosted code is disallowed in the Chrome Web
-  // Store for MV3 extensions. The code never actually loads the remote
-  // resource, as it is included in the bundle, but the Chrome Web Store detects
-  // a violation anyway, likely using a simple search for a CDN URL in the
-  // source files. The remote URL is partially removed, to avoid rejection by
-  // the Chrome Web Store.
-  /** @type ESBuildPlugin */
-  const removeRemoteCodeRefs = {
-    name: 'remove remote code references extension',
-    setup(build) {
-      build.onEnd((result) => {
-        if (result.errors.length === 0) {
-          fs.writeFileSync(outfile, fs.readFileSync(outfile)
-            .toString().replaceAll('https://cdn.jsdelivr.net', ''),
-          );
-        }
-      });
-    },
-  };
-
   return {
     entryPoints: [entryPoint.replace(/\.js$/, '.ts')],
     // Since the background script is an ES6 module, it doesn't have to be
@@ -395,7 +335,6 @@ function esbuildOptions(entryPoint, distDir, plugin) {
     sourcemap: 'inline',
     plugins: [
       typeScriptPlugin,
-      removeRemoteCodeRefs,
       ...(plugin ? [plugin] : [])],
     logLevel: 'warning',
   };
@@ -430,24 +369,32 @@ function zipDirectory(sourceDir, outPath) {
  * Build function.
  * @param {Browser} browser - Browser to build for
  * @param {boolean} zip - Whether to also zip the built extension
+ * @param {string} distDir - Output directory
+ * @param {boolean} development - Enable development-only tab refresh
  */
-async function build(browser, zip = false) {
+export async function build(browser, zip = false,
+  distDir = browserDist(browser), development = false) {
   if (browser === 'edge') browser = 'chromium';
 
   const manifest = readManifest();
   const browserSpecificManifest = adaptManifestToBrowser(manifest, browser);
-  writeManifest(browserSpecificManifest, browserDist(browser));
-
-  copyTesseractFiles(browserDist(browser));
+  const refreshTabs = development && browser === 'chromium';
+  if (refreshTabs) {
+    // Development builds need permission to find and refresh YouTube tabs.
+    browserSpecificManifest.host_permissions.push(
+      'https://www.youtube.com/*', 'https://m.youtube.com/*',
+    );
+  }
+  writeManifest(browserSpecificManifest, distDir);
 
   const filesToBeSynced = getFilesToBeSynced(manifest);
-  filesToBeSynced.forEach((file) => sync(file, browserDist(browser)));
+  filesToBeSynced.forEach((file) => sync(file, distDir));
 
   // Build icons.
   const icons = browserSpecificManifest?.icons;
   if (icons) {
     for (const [size, icon] of Object.entries(icons)) {
-      await buildIcon(icon, size, browserDist(browser));
+      await buildIcon(manifest.icons[size], icon, size, distDir);
     }
   }
 
@@ -456,7 +403,7 @@ async function build(browser, zip = false) {
   for (const contentScript of contentScripts) {
     for (const script of contentScript.js) {
       console.log(`Building content script ${script} using esbuild`);
-      await esbuild.build(esbuildOptions(script, browserDist(browser)));
+      await esbuild.build(esbuildOptions(script, distDir));
     }
   }
 
@@ -464,9 +411,11 @@ async function build(browser, zip = false) {
   const serviceWorker = manifest.background?.service_worker;
   if (serviceWorker) {
     console.log(`Building background script ${serviceWorker} using esbuild`);
-    await esbuild.build(
-      esbuildOptions(serviceWorker, browserDist(browser)),
-    );
+    const options = esbuildOptions(serviceWorker, distDir);
+    if (refreshTabs) {
+      options.footer = {js: `(${refreshDevelopmentTabs.toString()})();`};
+    }
+    await esbuild.build(options);
   }
 
   if (zip) {
@@ -474,63 +423,43 @@ async function build(browser, zip = false) {
     // zipped.
     const zipFile = path.join(dist, manifest.version + '-' + browser + '.zip');
     console.log(`Zipping built extension to ${zipFile}`);
-    await zipDirectory(browserDist(browser), zipFile);
+    await zipDirectory(distDir, zipFile);
   }
 }
 
 
 /**
- * `fs.watch()` does not work correctly, and often
- * - reports the same event more than once,
- * - incorrectly reports changes as a 'rename', and
- * - as a result doesn't report any future file changes.
- *
- * This custom file watcher context checks if the underlying file has actually
- * changed, and then instantiates a new file watcher to continue keeping track
- * of any changes.
+ * Describe the current source files and resources listed in the manifest.
+ * Checking file contents also catches editor saves that replace the whole file,
+ * which can break a watcher attached to the old file.
+ * @return {string} String used to detect changed input files
  */
-class FileWatcherContext {
-  #file;
-  #callback;
-  /** @type AbortController */
-  #abortController;
-  /** @type string */
-  #fileHash;
-
-  /**
-   * @param {string} file - File to be watched
-   * @param {function} callback - Function to call if file changes
-   */
-  constructor(file, callback) {
-    this.#file = file;
-    this.#callback = callback;
-    this.#updateFileWatcher();
+function sourceSnapshot() {
+  const files = new Set(['manifest.json', 'tsconfig.json']);
+  for (const entry of fs.readdirSync('.', {withFileTypes: true})) {
+    if (entry.isFile() && entry.name.endsWith('.ts')) files.add(entry.name);
   }
-
-  dispose() {
-    this.#abortController?.abort();
-  }
-
-  #updateFileWatcher() {
-    this.#fileHash = hashFile(this.#file);
-    this.dispose();
-    this.#abortController = new AbortController();
-    fs.watch(
-      this.#file,
-      {signal: this.#abortController.signal},
-      this.#fileWatcherCallback.bind(this),
-    );
-  }
-
-  #fileWatcherCallback() {
-    if (fs.existsSync(this.#file)) {
-      if (hashFile(this.#file) !== this.#fileHash) {
-        console.log(`\nDetected change in file ${this.#file}`);
-        this.#updateFileWatcher();
-        this.#callback();
-      }
+  const collect = (directory) => {
+    for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
+      const file = path.join(directory, entry.name);
+      if (entry.isDirectory()) collect(file);
+      else files.add(file);
     }
+  };
+  for (const directory of ['content', 'background', 'icons']) {
+    collect(directory);
   }
+  try {
+    const manifest = readManifest();
+    for (const file of getFilesToBeSynced(manifest)) files.add(file);
+    for (const icon of Object.values(manifest.icons ?? {})) files.add(icon);
+  } catch {
+    // Keep checking the manifest file even when its JSON is invalid, so fixing
+    // it triggers another build.
+  }
+  return JSON.stringify([...files].sort().map((file) => [
+    file, fs.existsSync(file) ? hashFile(file) : null,
+  ]));
 }
 
 
@@ -538,8 +467,9 @@ class FileWatcherContext {
  * Launch browser with extension, watch for changes, rebuild and reload. Assumes
  * that the extension has already been built.
  * @param {Browser} browser - Browser to launch with extension
+ * @param {string} initial - Revision built before browser startup
  */
-async function watch(browser) {
+async function watch(browser, initial) {
   const extensionRunner = await webExt.cmd.run({
     // Options correspond to CLI options.
     // Firefox requires absolute paths.
@@ -578,86 +508,24 @@ async function watch(browser) {
     }),
   });
 
-  const createContexts = async () => {
-    const contexts = [];
-
-    const manifest = readManifest();
-
-    // Watch non-JS files.
-    getFilesToBeSynced(manifest).forEach((file) => {
-      const context = new FileWatcherContext(file, () => {
-        sync(file, browserDist(browser));
-        extensionRunner.reloadAllExtensions();
-      });
-      contexts.push(context);
-    });
-
-    // Watch icons.
-    const icons = adaptManifestToBrowser(manifest, browser)?.icons;
-    if (icons) {
-      for (const [size, icon] of Object.entries(icons)) {
-        const context =
-            new FileWatcherContext(icon.replace(/\.png$/, '.svg'), async () => {
-              await buildIcon(icon, size, browserDist(browser));
-              extensionRunner.reloadAllExtensions();
-            });
-        contexts.push(context);
-      }
-    }
-
-    // This esbuild plugin is needed to reload the extension if the source files
-    // change.
-    /** @type {ESBuildPlugin} */
-    const reloadPlugin = {
-      name: 'reload extension',
-      setup(build) {
-        build.onEnd((result) => {
-          if (result.errors.length === 0) {
-            extensionRunner.reloadAllExtensions();
-          }
-        });
-      },
-    };
-
-    // Watch content scripts.
-    const contentScripts = manifest.content_scripts;
-    for (const contentScript of contentScripts) {
-      for (const script of contentScript.js) {
-        const context = await esbuild.context(
-          esbuildOptions(script, browserDist(browser), reloadPlugin),
-        );
-        await context.watch();
-        contexts.push(context);
-      }
-    }
-
-    // Watch background script.
-    const serviceWorker = manifest.background?.service_worker;
-    if (serviceWorker) {
-      const context = await esbuild.context(
-        esbuildOptions(serviceWorker, browserDist(browser), reloadPlugin),
-      );
-      await context.watch();
-      contexts.push(context);
-    }
-
-    return contexts;
-  };
-
-  let contexts = await createContexts();
-
-  // Listen for changes in the manifest file.
-  new FileWatcherContext('manifest.json', async () => {
-    console.log('Changes detected in \'manifest.json\'. Rebuilding.');
-    // The contexts created by esbuild have a `dispose` method. To allow for
-    // termination of all contexts using this method, `FileWatcherContext` has
-    // this method too.
-    contexts.forEach((context) => context.dispose());
-    cleanDirectory(browserDist(browser));
-    await build(browser);
-    extensionRunner.reloadAllExtensions();
-    contexts = await createContexts();
+  const staging = browserDist(browser) + '-staging';
+  const stop = watchBuild({
+    initial,
+    snapshot: sourceSnapshot,
+    build: async () => {
+      cleanDirectory(staging);
+      await build(browser, false, staging, true);
+    },
+    publish: async () => {
+      // Only replace the browser's files after the whole build succeeds. Keep
+      // the same output path because Chrome uses it to identify the extension.
+      fs.rmSync(browserDist(browser), {recursive: true});
+      fs.renameSync(staging, browserDist(browser));
+      await extensionRunner.reloadAllExtensions();
+    },
+    onError: (error) => console.error('Development rebuild failed:', error),
   });
+  extensionRunner.registerCleanup(stop);
 }
 
 
@@ -681,10 +549,16 @@ async function main() {
     console.log('\n');
   } else {
     const browser = args[1];
-    await build(browser);
-    await watch(browser);
+    const initial = sourceSnapshot();
+    await build(browser, false, browserDist(browser), true);
+    await watch(browser, initial);
   }
 }
 
 
-main();
+const entryPoint = process.argv[1] && path.resolve(process.argv[1]);
+const scriptPath = fileURLToPath(import.meta.url);
+// npm scripts invoke `node scripts/build`, relying on Node's .js resolution.
+if (entryPoint === scriptPath || `${entryPoint}.js` === scriptPath) {
+  main();
+}

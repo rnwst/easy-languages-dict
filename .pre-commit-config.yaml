@@ -36,10 +36,10 @@ repos:
 
       - id: type-check
         name: Type checking
-        description: Tests are not type-check during the build stage, so we need to run `tsc` separately.
-        entry: tsc
+        description: Type-check source and tests using the project compiler.
+        entry: npm run --silent type-check
         language: system
-        files: ^(.*\.js|.*\.ts)$
+        files: ^(.*\.js|.*\.ts|tsconfig\.json|package(-lock)?\.json)$
         pass_filenames: false
 
       - id: tests

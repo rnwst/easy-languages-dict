@@ -6,11 +6,7 @@ import {rewind, fastfwd} from './seek.js';
  * usage of the following code: `await timeout(timeinMS)`.
  */
 export function timeout(timeInMS: number): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve();
-    }, timeInMS);
-  });
+  return new Promise((res) => setTimeout(res, timeInMS));
 }
 
 
@@ -29,12 +25,68 @@ export function onDesktop(): boolean {
   return !onMobile();
 }
 
+/** Use the player's CSS classes to tell whether an ad is on screen. */
+export function isAdShowing(): boolean {
+  return Boolean(document.querySelector(
+    '#movie_player.ad-showing, #movie_player.ad-interrupting, ' +
+    '#player-container-id.ad-showing, #player-container-id.ad-interrupting',
+  ));
+}
+
+/** Notify the caller when ads start or finish, even if the player is replaced.
+ * Stop watching when the signal is cancelled.
+ */
+export function observeAdState(
+  receive: (showing: boolean) => void, signal: AbortSignal,
+): void {
+  signal.throwIfAborted();
+  let previous: boolean | undefined;
+  const check = () => {
+    const showing = isAdShowing();
+    if (showing !== previous) {
+      previous = showing;
+      receive(showing);
+    }
+  };
+  const observer = new MutationObserver(check);
+  observer.observe(document, {subtree: true, childList: true,
+    attributes: true, attributeFilter: ['class']});
+  signal.addEventListener('abort', () => observer.disconnect(), {once: true});
+  check();
+}
+
+/** Wait for the ad to finish without a time limit. The caller can still cancel
+ * the wait, for example when the user switches videos.
+ */
+export function waitForContent(signal: AbortSignal): Promise<void> {
+  signal.throwIfAborted();
+  if (!isAdShowing()) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const controller = new AbortController();
+    const cleanup = () => {
+      controller.abort();
+      signal.removeEventListener('abort', abort);
+    };
+    const abort = () => {
+      cleanup();
+      reject(signal.reason);
+    };
+    signal.addEventListener('abort', abort, {once: true});
+    observeAdState(showing => {
+      if (!showing) {
+        cleanup();
+        resolve();
+      }
+    }, controller.signal);
+  });
+}
+
 
 /**
  * Extract YouTube Video Id from video URL. Example: The video Id of
  * 'https://www.youtube.com/watch?v=x5yPyrpeWjo' is 'x5yPyrpeWjo'.
  */
-export function extractVideoId(videoURL: string): string | null {
+export function extractVideoId(videoURL: string): VideoId | null {
   return new URL(videoURL).searchParams.get('v');
 }
 
@@ -44,20 +96,39 @@ export function extractVideoId(videoURL: string): string | null {
  * This function is not declared asynchronous because we need the `resolve`
  * function in the callback of the `MutationObserver`.
  */
-export function waitForElt<T extends Element = Element>(selector: string):
+export function waitForElt<T extends Element = Element>(
+  selector: string, signal?: AbortSignal, timeout = 15000,
+):
     Promise<T> {
-  return new Promise((resolve) => {
-    const elt = document.querySelector<T>(selector);
-    if (elt) resolve(elt);
-    else {
-      new MutationObserver((_, observer) => {
-        const elt = document.querySelector<T>(selector);
-        if (elt) {
-          observer.disconnect();
-          resolve(elt);
-        }
-      }).observe(document, {childList: true, subtree: true});
-    }
+  return new Promise((resolve, reject) => {
+    signal?.throwIfAborted();
+    const cleanup = () => {
+      observer.disconnect();
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', abort);
+    };
+    const abort = () => {
+      cleanup();
+      reject(signal?.reason);
+    };
+    const check = () => {
+      const elt = document.querySelector<T>(selector);
+      if (elt) {
+        cleanup();
+        resolve(elt);
+      }
+    };
+    const observer = new MutationObserver(check);
+    const timer = timeout > 0 ? setTimeout(() => {
+      cleanup();
+      reject(new Error(`Timed out waiting for ${selector}`));
+    }, timeout) : undefined;
+    observer.observe(document, {
+      childList: true, subtree: true, attributes: true,
+      attributeFilter: ['src'],
+    });
+    signal?.addEventListener('abort', abort, {once: true});
+    check();
   });
 }
 
@@ -86,7 +157,7 @@ export function getMoviePlayer(): Promise<HTMLElement> {
 
 
 /**
- * Create DOM element. All elements created by Easy Languages Dictionary are
+ * Create DOM element. All elements created by YouTube Subtitle Translator are
  * assigned the class 'easy-languages-dict'. This makes it easier to distinguish
  * them from native YouTube page elements and makes inadvertent interference
  * with the YT page less likely.
@@ -99,7 +170,7 @@ export function createElement(_class: string): HTMLDivElement {
 
 
 /**
- * Return all DOM elements created by Easy Languages Dictionary to match the
+ * Return all DOM elements created by YouTube Subtitle Translator to match the
  * specified query selector.
  */
 export function easyLangsDictElts(selector: string): HTMLElement[] {
@@ -152,10 +223,8 @@ export function addRewindFastfwdListener(): void {
 
 
 /**
- * Remove 'keydown' event listener. When navigating from an Easy Languages video
- * to a video which is not an Easy Languages video, arrow key presses should
- * result in the video being rewound/fast-forwarded by the default 5 seconds.
- * This necessitates the removal of the event listener.
+ * Remove our key handler when leaving a video with interactive captions, so
+ * arrow keys resume YouTube's default 5-second seeking.
  */
 export function removeRewindFastfwdListener(): void {
   document.removeEventListener('keydown', keyEventHandler, {capture: true});
@@ -163,12 +232,11 @@ export function removeRewindFastfwdListener(): void {
 
 
 /**
- * On the mobile YT page, this function prevents the pointer-enterable
- * container's children from being on top of the video controls when they are
- * active.
+ * On the mobile YT page, this function prevents the given container's children
+ * from being on top of the video controls when they are active.
  */
 export async function
-hideBehindActivePlayerControls(pointerEnterableContainer: HTMLElement):
+hideBehindActivePlayerControls(container: HTMLElement):
     Promise<void> {
   const observer = new MutationObserver((mutations) => {
     mutations.forEach(async (mutation) => {
@@ -177,7 +245,7 @@ hideBehindActivePlayerControls(pointerEnterableContainer: HTMLElement):
       // player controls.
       if (mutation.target instanceof Element) {
         if (mutation.target.getAttribute('id') === 'player-control-overlay') {
-          pointerEnterableContainer.style.zIndex =
+          container.style.zIndex =
               mutation.target.classList.contains('fadein') ? 'auto' : '';
         }
       }
@@ -196,26 +264,11 @@ hideBehindActivePlayerControls(pointerEnterableContainer: HTMLElement):
   // this end, we may redefine the `.remove()` function to first disconnect the
   // observer.
   const oldRemove =
-      pointerEnterableContainer.remove.bind(pointerEnterableContainer);
-  pointerEnterableContainer.remove = () => {
+      container.remove.bind(container);
+  container.remove = () => {
     observer.disconnect();
     oldRemove();
   };
-}
-
-
-/**
- * Wait for video to be playable.
- */
-export function waitForPlayable(video: HTMLVideoElement): Promise<void> {
-  return new Promise((resolve) => {
-    if (video.readyState >= 3) resolve();
-    else {
-      video.addEventListener('canplay', () => {
-        resolve();
-      }, {once: true});
-    }
-  });
 }
 
 
@@ -226,33 +279,4 @@ export function waitForPlayable(video: HTMLVideoElement): Promise<void> {
 export function isTranslatable(wordText: string): boolean {
   const isNumeric = (str: string) => !isNaN(Number(str));
   return !isNumeric(wordText) && wordText != '-';
-}
-
-
-/**
- * Get dimensions of Data URL image.
- */
-export function getImageDimensions(dataURL: string):
-    Promise<{ width: number; height: number }> {
-  const image = new Image();
-  image.src = dataURL;
-  return new Promise((resolve) => {
-    image.onload = () => {
-      resolve({
-        width: image.naturalWidth,
-        height: image.naturalHeight,
-      });
-    };
-  });
-}
-
-
-/**
- * Check if a promise is resolved or not.
- */
-export async function isPromiseResolved<T>(promise: Promise<T>):
-    Promise<boolean> {
-  const notAPromise = 'unlikely value';
-  return Promise.race([promise, notAPromise])
-    .then((value) => (value !== notAPromise));
 }

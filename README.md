@@ -1,7 +1,7 @@
 <p align="center">
   <img src='./icons/128.svg' width='120px'/>
 </p>
-<h1 align="center">Easy Languages Dictionary</h1>
+<h1 align="center">YouTube Subtitle Translator</h1>
 <div align="center">
   <a href="https://chromewebstore.google.com/detail/cclabikdbgmiadcihncalbdchliaambo"><img src='./README-files/chrome-web-store.svg' height='60px' width='225px'/></a>
   <a href="https://microsoftedge.microsoft.com/addons/detail/easy-languages-dictionary/polkponobkkpkdjibgiomifmcokdihjl"><img src='./README-files/get-it-from-ms.svg' height='60px' width='190px'/></a>
@@ -23,11 +23,13 @@
 </div>
 <div>&nbsp;</div>
 
-*Easy Languages Dictionary* is a browser extension to help you learn spoken languages. It provides translations of individual words in the subtitles of videos published by any of the [*Easy Languages* YouTube channels](https://www.youtube.com/@easylanguages/playlists). It recognizes the words in the subtitles using [Tesseract](https://github.com/naptha/tesseract.js/) and translates them using various online translation services.
+*YouTube Subtitle Translator* is a browser extension to help you learn spoken languages. It displays YouTube caption tracks as interactive subtitles. Hover over or tap a word to translate it using online translation services. English caption translations appear below the original when YouTube makes them available. Note that YouTube videos must have a usable caption track.
 
-<img src='./README-files/demo.webp' width='100%' />*This demonstration shows an excerpt from [this video](https://www.youtube.com/watch?v=prYx-rYtKgc) - © 2023 [Easy Polish YouTube Channel](https://www.youtube.com/@EasyPolish).*
+Interactive captions start automatically on YouTube watch pages when a non-English video language can be detected and a matching caption track exists. English-language videos do not start the extension's caption acquisition or overlay; YouTube's own captions remain available. Manually authored captions are preferred over automatic captions. The first line uses the detected source language. Already-captured English captions supply the second line when available; otherwise, an existing English track is fetched directly. YouTube auto-translation is used for translatable tracks only when no English track exists. Word lookups also translate into English.
 
-While I am unaffiliated with the Easy Languages franchise and this extension is an entirely separate project, it would have no value without the great work done by the people running the Easy Languages channels. **Please consider supporting the channels on Patreon if you find their work useful!**
+<img src='./README-files/demo.webp' width='100%' alt='Polish video paused while each subtitle word is hovered to show its English translation.' />*This demonstration shows an excerpt from [this video](https://www.youtube.com/watch?v=Z9PRhksKFqU&t=85s) - © 2026 [Polish with Kamil](https://www.youtube.com/@polishwithkamil).*
+
+This project began as *Easy Languages Dictionary*, an extension that OCRed the subtitles in videos the of Easy Languages YouTube channels, but has since moved on from this.
 
 
 ### Supported browsers
@@ -37,16 +39,6 @@ The extension is available for [Firefox](https://addons.mozilla.org/en-US/firefo
 The extension is not available for Safari, for the following reasons:
 - Publishing a Safari extension requires enrolling in the 'Apple Developer Program', at a cost of 99 $/year, which I have very little appetite for.
 - Safari [doesn't support some WebExtension APIs](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/webNavigation/onHistoryStateUpdated#browser_compatibility) which this extension relies on.
-
-
-### Linux
-
-In the interest of stylistic coherence, for its translations, Easy Languages Dictionary attempts to match the font used for the subtitles in the Easy Languages YouTube videos. This font appears to be [Tahoma](https://en.wikipedia.org/wiki/Tahoma_(typeface)), and is not usually present on Linux systems. If you are the type of person who gets irritated by mismatched fonts and are running Linux, consider installing the Tahoma font.
-
-
-## Supported languages
-
-Most languages available on the Easy Languages channels are supported by Easy Languages Dictionary, however very few have been tested so far!
 
 
 ## License

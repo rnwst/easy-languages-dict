@@ -1,248 +1,245 @@
-import {
-  onMobile,
-  onDesktop,
-  extractVideoId,
-  waitForElt,
-  getVideo,
-  getMoviePlayer,
-  addRewindFastfwdListener,
-  removeRewindFastfwdListener,
-  hideBehindActivePlayerControls,
-  waitForPlayable,
-  isTranslatable,
-  getImageDimensions,
-  isPromiseResolved,
-} from './lib/utils.js';
-import getVideoMetadata from './lib/getVideoMetadata.js';
-import getLang from './lib/getLang.js';
-import createOCRWorker from './lib/createOCRWorker.js';
-import getSubtitlePosition from './lib/getSubtitlePosition.js';
-import {createScreenshotOverlay, takeScreenshots} from './lib/screenshot.js';
-import {
-  createUnderlines,
-  removeUnderlines,
-  illuminateUnderline,
-  unilluminateUnderlines,
-} from './lib/underlines.js';
-import {createPointerEnterables, removePointerEnterables}
-  from './lib/pointer-enterables.js';
-import {createTranslationBubble, removeTranslationBubbles}
-  from './lib/translation-bubbles.js';
-import type {WidthHeight} from './lib/translation-bubbles.js';
-import translateWord from './lib/translateWord.js';
-import avoidBrowserBugs from './lib/avoidBrowserBugs.js';
-
-
-// YouTube is a single-page app, and updates URLs using `history.pushState`.
-// Thus, we need to execute the main function once at the beginning, and
-// subsequently everytime the user navigates to a new video.
-let videoId: string | null = extractVideoId(document.URL);
-if (videoId) main();
-chrome.runtime.onMessage.addListener((message) => {
-  // When loading (not navigating to) a URL which corresponds to a playlist,
-  // YouTube pushes a history state, even though no page navigation is
-  // happening. YT also pushes a history state containing the old URL the first
-  // time AJAX navigation is used (and then another history state containing the
-  // new URL in quick succession). To avoid executing the main function more
-  // than once on the same video, we need to check if the video has actually
-  // changed.
-  const oldVideoId = videoId;
-  videoId = extractVideoId(message.url);
-  if (videoId != oldVideoId) {
-    // This event is needed to terminate any currently running instances of the
-    // main function.
-    document.dispatchEvent(new CustomEvent('videoId-changed'));
-    // If a new video was navigated to, launch main function.
-    if (videoId) main();
-  }
-});
-
-
 /**
- * Main function. Executed whenever a new video is loaded.
+ * The browser separates the page's JavaScript from the extension's JavaScript.
+ * This script runs on the page's side so it can read YouTube's player and watch
+ * its requests. It passes the needed data to the extension's separate script,
+ * which decides what captions to show and draws the interface.
  */
-async function main() {
-  const videoId = extractVideoId(document.URL);
+import {installAwaitCaptionDecoration} from './lib/awaitCaptionDecoration.js';
+import {installCaptionReplay} from './lib/captionReplay.js';
 
-  const videoMetadata = await getVideoMetadata(videoId!);
-  const lang = await getLang(videoMetadata);
-  // If the language does not appear in `langs.csv` or if it is unsupported by
-  // Tesseract, return.
-  if (!lang || (lang.tesseractCode == '-')) return;
-
-  addRewindFastfwdListener();
-
-  const worker = await createOCRWorker(lang.tesseractCode);
-
-  const video = await getVideo();
-
-  const subtitlePosition =
-      getSubtitlePosition(lang.name, videoId!, videoMetadata.publicationDate);
-
-  const underlineContainer =
-      createScreenshotOverlay(video, subtitlePosition, 'underline-container');
-  const translationBubbleContainer = createScreenshotOverlay(
-    video,
-    subtitlePosition,
-    'translation-bubble-container',
-  );
-  const pointerEnterableContainer = createScreenshotOverlay(
-    video,
-    subtitlePosition,
-    'pointer-enterable-container',
-  );
-
-  const moviePlayer = await getMoviePlayer();
-
-  [underlineContainer, translationBubbleContainer].forEach((container) => {
-    moviePlayer.appendChild(container);
-  });
-
-  if (onDesktop()) {
-    moviePlayer.appendChild(pointerEnterableContainer);
-  }
-
-  if (onMobile()) {
-    // On the mobile page, the subtree of the `#player-control-overlay >
-    // ytm-custom-control` element only gets created once the visitor interacts
-    // with the video. That subtree appears to be managed by the
-    // [incremental-dom](https://github.com/google/incremental-dom/) library. On
-    // every update of the DOM, incremental-dom diffs the actual subtree against
-    // the virtual DOM and makes appropriate changes. This results in the swift
-    // removal of any foreign elements that are inserted here. Therefore, we
-    // need to insert the pointer-enterable container at the top level, where it
-    // won't be removed.
-    const playerContainer = await waitForElt('#player-container-id');
-    const player = await waitForElt('#player');
-    playerContainer.insertBefore(pointerEnterableContainer, player.nextSibling);
-
-    hideBehindActivePlayerControls(pointerEnterableContainer);
-  }
-
-  translationBubbleContainer.addEventListener(
-    'translation-request',
-    (evt: Event) => {
-      const customEvent = evt as
-          CustomEvent<{words: Tesseract.Word[];
-                       wordIndex: number;
-                       screenshotDims: WidthHeight}>;
-      if (document.contains(translationBubbleContainer)) {
-        removeTranslationBubbles();
-        unilluminateUnderlines();
-        const {words, wordIndex, screenshotDims} = customEvent.detail;
-        illuminateUnderline(wordIndex);
-        const bubble =
-            createTranslationBubble(words[wordIndex], screenshotDims);
-        const sentence = customEvent.detail.words.map(
-          (word) => word.text
-        );
-        translateWord(
-          sentence,
-          wordIndex,
-          lang,
-        )
-          .then(
-            (translation) => bubble.innerHTML = translation
-          )
-          .catch(
-            (error: Error) => bubble.innerHTML =
-              `<div class="error">${error.name}: ${error.message}</div>`
-          );
-      }
-    }
-  );
-
-  if (onDesktop()) {
-    avoidBrowserBugs();
-  }
-
-  // This flag indicates whether the video was paused or seeked while the main
-  // loop was executing. If so, another loop iteration should be run to make
-  // sure the OCRed text is up-to-date.
-  let recentlyPausedOrSeeked = false;
-
-  // Used to prevent overlaid elements from being recreated if the OCRed
-  // sentence hasn't changed.
-  let previouslyOCRedText: string | undefined;
-
-  const mainLoop = async () => {
-    while (videoId === extractVideoId(document.URL) &&
-        (!video.paused || recentlyPausedOrSeeked)) {
-      recentlyPausedOrSeeked = false;
-
-      await waitForPlayable(video);
-      const {textImage, descenderMask} =
-          takeScreenshots(video, subtitlePosition);
-      const {data} = await worker.recognize(textImage);
-      if (previouslyOCRedText !== data.text) {
-        previouslyOCRedText = data.text;
-
-        const words = (data.confidence > 65) ?
-          data.words.filter(
-            (word) => isTranslatable(word.text)
-          ) : [];
-
-        const screenshotDims = await getImageDimensions(textImage);
-
-        removeUnderlines();
-        removePointerEnterables();
-        removeTranslationBubbles();
-
-        createPointerEnterables(words, screenshotDims);
-        createUnderlines(words, screenshotDims, descenderMask);
-      }
-    }
-  };
-
-  // Used to terminate various event listeners.
-  const abortController = new AbortController();
-
-  video.addEventListener('pause', () => {
-    recentlyPausedOrSeeked = true;
-  }, {signal: abortController.signal});
-
-  // Holds the promise returned by the current instance of the async mainLoop
-  // function. Used to check if a current instance of mainLoop is already
-  // running. Also, before cleaning up, we need to await termination of the
-  // current loop as the mainLoop function might still hold references to
-  // elements we might otherwise have removed already.
-  let currentLoop = mainLoop();
-
-  const runMainLoopIfNotAlreadyRunning = async () => {
-    if (await isPromiseResolved(currentLoop)) {
-      currentLoop = mainLoop();
-    }
-  };
-
-  // Perform OCR when the video is seeked, to make sure the recognized text is
-  // up-to-date.
-  video.addEventListener('seeked', () => {
-    recentlyPausedOrSeeked = true;
-    runMainLoopIfNotAlreadyRunning();
-  }, {signal: abortController.signal});
-
-  video.addEventListener('play', () => {
-    runMainLoopIfNotAlreadyRunning();
-  }, {signal: abortController.signal});
-
-  const cleanUp = () => {
-    abortController.abort();
-    removeRewindFastfwdListener();
-    worker.terminate();
-    underlineContainer.remove();
-    translationBubbleContainer.remove();
-    pointerEnterableContainer.remove();
-  };
-
-  if (videoId === extractVideoId(document.URL)) {
-    // Still on the same video!
-    document.addEventListener('videoId-changed', async () => {
-      await currentLoop;
-      cleanUp();
-    }, {once: true});
-  } else {
-    // User already navigated to new page!
-    await currentLoop;
-    cleanUp();
+declare global {
+  interface Window {
+    ytInitialPlayerResponse?: YTVideoMetadata;
   }
 }
+
+(() => {
+  const origin = 'EASY_LANGUAGES_DICT_EXT';
+  const activeRequests = new Map<string, CaptionRequest>();
+  const captionResponses = new Map<string, CaptionResponse>();
+  let requestId = 0;
+  const metadataResponses = new Map<string, YTVideoMetadata>();
+  const remember = <T>(cache: Map<string, T>, id: string, value: T) => {
+    cache.delete(id);
+    cache.set(id, value);
+    if (cache.size > 10) cache.delete(cache.keys().next().value!);
+  };
+  const send = (type: string, content: unknown) => {
+    window.postMessage({origin, type, content}, location.origin);
+  };
+  installAwaitCaptionDecoration((status) => {
+    send('CAPTION_DECORATION_STATUS', status);
+  });
+  const replay = installCaptionReplay();
+  const describeRequest = (
+    address: string, method: string, headers: Headers,
+  ) => {
+    try {
+      const url = new URL(address, location.origin);
+      if (method.toUpperCase() === 'GET' &&
+          url.pathname === '/api/timedtext' && url.searchParams.has('v')) {
+        const clientHeaders: Record<string, string> = {};
+        const keys = ['x-youtube-client-name', 'x-youtube-client-version'];
+        for (const key of keys) {
+          const value = headers.get(key);
+          if (value) clientHeaders[key] = value;
+        }
+        const request: CaptionRequest = {
+          id: ++requestId, params: Object.fromEntries(url.searchParams),
+          headers: clientHeaders, startedAt: Date.now(),
+        };
+        return request;
+      }
+    } catch { /* Leave malformed requests to the native implementation. */ }
+  };
+  const started = (request: CaptionRequest, url: string, headers: Headers) => {
+    replay.remember(request.id, url, headers);
+    activeRequests.set(String(request.id), request);
+    send('CAPTION_REQUEST', request);
+  };
+  // Pass along the text YouTube downloaded. The other script checks and parses
+  // it, so we can use the same captions instead of downloading them again.
+  const captionResponse = (
+    request: CaptionRequest, status: number, body: string,
+    outcome: CaptionResponse['outcome'] = 'load',
+  ) => {
+    const content = {...request, status, body, outcome};
+    activeRequests.delete(String(request.id));
+    // Save failures too. A script asking for earlier results needs to know
+    // which requests have finished, rather than keep waiting for them.
+    remember(captionResponses, String(request.id), content);
+    send('CAPTION_RESPONSE', content);
+  };
+  // Copy the fields we use, rather than all of YouTube's video/stream details.
+  const metadata = (value: YTVideoMetadata | undefined) => value && ({
+    videoDetails: value.videoDetails,
+    captions: value.captions,
+    streamingData: {
+      adaptiveFormats: value.streamingData?.adaptiveFormats?.map(
+        ({audioTrack}) => ({audioTrack})
+      ) ?? [],
+    },
+  });
+  window.addEventListener('message', (evt) => {
+    if (evt.source !== window || evt.origin !== location.origin ||
+        evt.data?.origin !== origin) return;
+    if (evt.data.type === 'VIDEO_METADATA_REQUEST') {
+      const id = evt.data.videoId;
+      const cached = metadataResponses.get(id);
+      const initial = window.ytInitialPlayerResponse;
+      // When switching videos, YouTube may update the player without setting
+      // ytInitialPlayerResponse or making a request we observed. Ask the player
+      // itself for the video information as another way to obtain it.
+      let current: YTVideoMetadata | undefined;
+      try {
+        const player = document.getElementById('movie_player') as
+          (HTMLElement & {getPlayerResponse?: () => YTVideoMetadata}) | null;
+        current = player?.getPlayerResponse?.();
+      } catch { /* Player initialization may still be in progress. */ }
+      // During a video change, some data may still describe the previous video.
+      const candidates = [current, cached, initial]
+        .filter((value) => value?.videoDetails?.videoId === id);
+      const value = metadata(candidates.find((value) => value?.captions) ??
+        candidates[0]);
+      if (value) send('VIDEO_METADATA', value);
+    } else if (evt.data.type === 'CAPTION_STATE_REQUEST') {
+      for (const request of activeRequests.values()) {
+        if (request.params.v === evt.data.videoId) {
+          send('CAPTION_REQUEST', request);
+        }
+      }
+      const responses = [...captionResponses.values()]
+        .sort((a, b) => a.id - b.id);
+      for (const response of responses) {
+        if (response.params.v === evt.data.videoId) {
+          send('CAPTION_RESPONSE', response);
+        }
+      }
+    }
+  });
+
+  const originalFetch = window.fetch;
+  window.fetch = function (input, init) {
+    const response = originalFetch.call(this, input, init);
+    let url = '';
+    let request: CaptionRequest | undefined;
+    let headers = new Headers();
+    try {
+      url = input instanceof Request ? input.url : String(input);
+      if (url.includes('/api/timedtext')) {
+        headers = new Headers(init?.headers ??
+          (input instanceof Request ? input.headers : undefined));
+        request = describeRequest(url,
+          init?.method ?? (input instanceof Request ? input.method : 'GET'),
+          headers);
+      }
+    } catch { /* Observation must not change native fetch rejection. */ }
+    if (request) {
+      const captured = request;
+      started(captured, url, headers);
+      void response.then(async (result) => {
+        captionResponse(captured, result.status, await result.clone().text());
+      }).catch((error) => captionResponse(captured, 0, '',
+        error?.name === 'AbortError' ? 'abort' : 'error'));
+    }
+    if (url.includes('/youtubei/v1/player')) {
+      void response.then(async (result) => {
+        if (result.ok) {
+          const value = metadata(await result.clone().json());
+          if (value?.videoDetails?.videoId) {
+            remember(metadataResponses, value.videoDetails.videoId, value);
+            send('VIDEO_METADATA', value);
+          }
+        }
+      }).catch(() => {});
+    }
+    return response;
+  };
+
+  // Watch XMLHttpRequest (XHR) downloads while keeping normal browser events.
+  const originalOpen = XMLHttpRequest.prototype.open;
+  const originalSend = XMLHttpRequest.prototype.send;
+  const originalSetHeader = XMLHttpRequest.prototype.setRequestHeader;
+  const xhrPending = new WeakMap<XMLHttpRequest, () => void>();
+  const xhrState = new WeakMap<XMLHttpRequest, {
+    method: string; address: string; async: boolean; headers: Headers;
+    sent: boolean;
+  }>();
+  XMLHttpRequest.prototype.open = function (
+    method: string, address: string | URL, async: boolean = true,
+    username?: string | null, password?: string | null,
+  ) {
+    // Calling open() again can end the old XHR request without an abort event.
+    // Mark our old record as finished; do not manufacture browser events.
+    // If open() fails, the old request may still be running. Keep watching it.
+    const previous = xhrPending.get(this);
+    originalOpen.call(this, method, address, async, username, password);
+    previous?.();
+    xhrState.set(this, {method, address: String(address), async,
+      headers: new Headers(), sent: false});
+  };
+  XMLHttpRequest.prototype.setRequestHeader = function (name, value) {
+    originalSetHeader.call(this, name, value);
+    xhrState.get(this)?.headers.append(name, value);
+  };
+  XMLHttpRequest.prototype.send = function (body) {
+    const state = xhrState.get(this);
+    if (!state || !state.async || state.sent || this.readyState !== 1) {
+      return originalSend.call(this, body);
+    }
+    const request = describeRequest(state.address, state.method, state.headers);
+    if (!request) return originalSend.call(this, body);
+    const events = ['load', 'error', 'abort', 'timeout'] as const;
+    let published = false;
+    let completed = false;
+    const synchronousCompletions: Array<{
+      status: number; text: string; outcome: CaptionResponse['outcome'];
+    }> = [];
+    const cleanup = () => {
+      for (const type of events) this.removeEventListener(type, complete);
+      if (xhrPending.get(this) === superseded) xhrPending.delete(this);
+    };
+    const finish = (completion: typeof synchronousCompletions[number]) => {
+      if (completed) return;
+      completed = true;
+      cleanup();
+      if (published) {
+        captionResponse(request, completion.status, completion.text,
+          completion.outcome);
+      } else synchronousCompletions.push(completion);
+    };
+    const superseded = () => finish({status: 0, text: '', outcome: 'abort'});
+    const complete = (evt: Event) => {
+      let text = '';
+      if (evt.type === 'load') {
+        if (this.responseType === '' || this.responseType === 'text') {
+          text = this.responseText;
+        } else if (this.responseType === 'json') {
+          text = JSON.stringify(this.response);
+        }
+      }
+      finish({status: this.status, text,
+        outcome: evt.type as CaptionResponse['outcome']});
+    };
+    xhrPending.set(this, superseded);
+    for (const type of events) this.addEventListener(type, complete);
+    try {
+      originalSend.call(this, body);
+      state.sent = true;
+      started(request, state.address, state.headers);
+      published = true;
+      // YouTube's loadstart handler can cancel a request before send() returns.
+      // Tell the other script about the start first, then the cancellation,
+      // otherwise it could keep waiting for a request that has already ended.
+      for (const completion of synchronousCompletions) {
+        captionResponse(request, completion.status, completion.text,
+          completion.outcome);
+      }
+    } catch (error) {
+      cleanup();
+      throw error;
+    }
+  };
+})();
+
+export {};

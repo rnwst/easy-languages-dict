@@ -1,114 +1,139 @@
-import * as fs from 'fs';
+import translateWord, {escapeHTML, removePunctuation}
+  from '../content/lib/translateWord.js';
+import {parseCaptions, getPreferredCaptionTrack}
+  from '../content/lib/captions.js';
+import {activeCaption, renderSubtitles} from '../content/lib/subtitles.js';
+import {getVideoLang} from '../content/lib/metadata.js';
+import {waitForElt} from '../content/lib/utils.js';
 
-import {parseCSV} from '../content/lib/readLangsDotCSV.js';
-import translateWord, {
-  removePunctuation,
-} from '../content/lib/translateWord.js';
-
-
-describe('getLang', () => {
-  global.chrome = {
-    runtime: {
-      getURL: () => '',
-    },
-  } as unknown as typeof chrome;
-
-  global.fetch = () => Promise.resolve({
-    text: () => fs.readFileSync('langs.csv').toString(),
-  })as unknown as Promise<Response>;
-
-  jest.mock('../content/lib/getVideoMetadata.js', () => {
-    return Promise.resolve({
-      channelHandle: '',
-      title: '',
+describe('caption migration', () => {
+  it('waits for mobile playback initialization via a src attribute change',
+    async () => {
+      const video = document.createElement('video');
+      document.body.append(video);
+      const controller = new AbortController();
+      const pending = waitForElt('video[src]', controller.signal, 0);
+      video.setAttribute('src', 'blob:fixture');
+      await expect(pending).resolves.toBe(video);
+      controller.abort();
+      video.remove();
     });
+  it('normalizes segments and respects gaps and seeks', () => {
+    const cues = parseCaptions({events: [
+      {tStartMs: 0},
+      {tStartMs: 1000, dDurationMs: 1000,
+        segs: [{utf8: 'Hello\n'}, {utf8: 'world'}]},
+      {tStartMs: 3000, dDurationMs: 1000, segs: [{utf8: 'Again'}]},
+    ]});
+    expect(activeCaption(cues, 1.5)?.text).toBe('Hello world');
+    expect(activeCaption(cues, 2)).toBeUndefined();
+    expect(activeCaption(cues, 3.5)?.text).toBe('Again');
+    expect(activeCaption(cues, 1)?.text).toBe('Hello world');
   });
 
-  // Need to import function using `require` after `getVideoMetadata` has been
-  // mocked, as it is executed on import.
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const {extractLangFromTitle} = require('../content/lib/getLang.js');
-
-  describe('extractLangFromTitle', () => {
-    it('extracts language from video title', () => {
-      const channelTitleLanguagePairs = [
-        ['Easy Japanese 19 - Slang words', 'japanese'],
-        ['Learning Thai Numbers | Super Easy Thai 2', 'thai'],
-        ['Christmas in Taiwan | Easy Taiwanese Mandarin 15', 'mandarin'],
-      ];
-      channelTitleLanguagePairs.forEach((pair) => {
-        expect(extractLangFromTitle(pair[0])).toEqual(pair[1]);
-        jest.restoreAllMocks();
-      });
-    });
+  it('prefers manual captions regardless of display-name length', () => {
+    const tracks = [
+      {languageCode: 'de', kind: 'asr', name: {simpleText: 'DE'}},
+      {languageCode: 'de', name: {simpleText: 'German manual captions'}},
+    ] as YTCaptionTrack[];
+    expect(getPreferredCaptionTrack(tracks, 'de')).toBe(tracks[1]);
   });
+
+  it('extracts the original audio language with a base UI locale', () => {
+    document.documentElement.lang = 'en';
+    const metadata = {
+      captions: {playerCaptionsTracklistRenderer: {
+        captionTracks: [{languageCode: 'en'}, {languageCode: 'de'}],
+        audioTracks: [{captionTrackIndices: [0]}, {captionTrackIndices: [1]}],
+      }},
+      streamingData: {adaptiveFormats: [
+        {audioTrack: {displayName: 'English', id: 'en.0'}},
+        {audioTrack: {displayName: 'German (Original)', id: 'de.4'}},
+      ]},
+    } as YTVideoMetadataWithCaptions;
+    expect(getVideoLang(metadata)).toBe('de');
+    document.documentElement.lang = 'unknown';
+    expect(getVideoLang(metadata)).toBeUndefined();
+  });
+
+  it('renders stationary words, handles seeking and cleans up on navigation',
+    () => {
+      global.ResizeObserver = class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      };
+      const player = document.createElement('div');
+      const video = document.createElement('video');
+      player.append(video);
+      document.body.append(player);
+      const controller = new AbortController();
+      const updateTranslation = renderSubtitles(player, video, [
+        {start: 0, end: 1, text: 'Hallo Welt'},
+        {start: 2, end: 3, text: 'Noch einmal'},
+      ], 'de', controller.signal);
+      expect(player.querySelectorAll('.subtitle-word')).toHaveLength(2);
+      updateTranslation([{start: 0, end: 1, text: 'Hello world'}]);
+      expect(player.querySelector('.translated-subtitle')?.textContent)
+        .toBe('Hello world');
+      video.currentTime = 1.5;
+      video.dispatchEvent(new Event('seeked'));
+      expect(player.querySelectorAll('.subtitle-word')).toHaveLength(0);
+      video.currentTime = 2.5;
+      video.dispatchEvent(new Event('seeked'));
+      expect(player.querySelector('.original-subtitle')?.textContent)
+        .toBe('Noch einmal');
+      controller.abort();
+      expect(player.querySelector('.subtitle-container')).toBeNull();
+      expect(player.querySelector('video')).toBe(video);
+      player.remove();
+    });
 });
-
-
-describe('readLangsDotCSV', () => {
-  describe('parseCSV', () => {
-    it('parses CSV', () => {
-      const csv =
-        'name,iso,defaultEngine\n' +
-        'sindarin,sjn,elvishTranslator\n' +
-        'quenya,qya,elvishTranslator\n';
-      const parsed = [
-        {
-          name: 'sindarin',
-          iso: 'sjn',
-          defaultEngine: 'elvishTranslator',
-        },
-        {
-          name: 'quenya',
-          iso: 'qya',
-          defaultEngine: 'elvishTranslator',
-        },
-      ];
-      expect(parseCSV(csv)).toEqual(parsed);
-    });
-  });
-});
-
 
 describe('translateWord', () => {
-  global.chrome = {
-    runtime: {
-      sendMessage: () => Promise.resolve('test'),
-    },
-  } as unknown as typeof chrome;
-
-  describe('removePunctuation', () => {
-    it('removes punctuation', () => {
-      expect(removePunctuation('word.')).toEqual('word');
-      expect(removePunctuation('word,')).toEqual('word');
-      expect(removePunctuation('word?')).toEqual('word');
+  it('does not try other translators when the extension context is invalid',
+    async () => {
+      const sendMessage = jest.fn().mockRejectedValue(
+        new Error('Extension context invalidated.'),
+      );
+      global.chrome = {runtime: {sendMessage}} as unknown as typeof chrome;
+      await expect(translateWord(['Hallo'], 0, 'de'))
+        .rejects.toThrow('Refresh this YouTube page to reconnect');
+      expect(sendMessage).toHaveBeenCalledTimes(1);
     });
-    it('returns word without punctuation unmodified', () => {
-      expect(removePunctuation('word')).toEqual('word');
+  it('falls back when the preferred context translator rejects a request',
+    async () => {
+      const sendMessage = jest.fn().mockImplementation((request) => {
+        if (request.translator === 'deepL') {
+          return Promise.resolve({type: 'error', name: 'Error',
+            message: 'DeepL client no longer supported'});
+        }
+        return Promise.resolve({type: 'translation',
+          translation: request.translator === 'bing' ?
+            '<b>Hello</b>' : 'Hello'});
+      });
+      global.chrome = {runtime: {sendMessage}} as unknown as typeof chrome;
+      await expect(translateWord(['Hallo', 'Welt'], 0, 'de'))
+        .resolves.toBe('Hello');
+      expect(sendMessage.mock.calls.map(([request]) => request.translator))
+        .toEqual(['google', 'deepL', 'bing']);
     });
-    it('leaves empty string empty', () => {
-      expect(removePunctuation('')).toEqual('');
-    });
+  it('removes terminal punctuation', () => {
+    expect(removePunctuation('word.')).toBe('word');
+    expect(removePunctuation('')).toBe('');
   });
 
-  describe('translateWord', () => {
-    it('only sends one request for one word sentence', async () => {
-      const sendMessageSpy = jest.spyOn(global.chrome.runtime, 'sendMessage');
-      try {
-        await translateWord(
-          ['Cześć!'],
-          0,
-          {
-            name: 'polish',
-            defaultOutOfContextTranslator: 'bing',
-            defaultInContextTranslator: 'bing',
-            bingCode: 'pl',
-          },
-        );
-      } catch {
-        // Without a response from `sendMessage`, an error will be thrown.
-      };
-      expect(sendMessageSpy).toHaveBeenCalledTimes(1);
+  it('escapes translator HTML before inserting it into bubbles', () => {
+    expect(escapeHTML('<img src=x onerror=alert(1)>'))
+      .toBe('&lt;img src=x onerror=alert(1)&gt;');
+  });
+
+  it('sends only one request for a single-word sentence', async () => {
+    const sendMessage = jest.fn().mockResolvedValue({
+      type: 'translation', translation: 'Hello',
     });
+    global.chrome = {runtime: {sendMessage}} as unknown as typeof chrome;
+    await expect(translateWord(['Hallo'], 0, 'de')).resolves.toBe('Hello');
+    expect(sendMessage).toHaveBeenCalledTimes(1);
   });
 });

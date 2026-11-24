@@ -4,6 +4,7 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "strict": true,
+    "types": ["chrome", "jest", "node"],
     "noEmit": true,
     "skipLibCheck": true,
     "esModuleInterop": true,

@@ -1,7 +1,7 @@
 import googleTranslate from './translators/googleTranslate.js';
 import bingTranslate from './translators/bingTranslate.js';
 import deepL from './translators/deepL.js';
-import {TranslationRequest} from '../../content/lib/translateWord.js';
+import {TranslatorRequest} from '../../types.js';
 import {JSONSerializable} from '../../types.js';
 
 
@@ -10,29 +10,6 @@ import {JSONSerializable} from '../../types.js';
  * only allow a limited number of requests in a given timeframe.
  */
 const dicts: Record<string, Record<string, Promise<string>>> = {};
-
-
-/**
- * Generate key name for translations to be stored in `dicts`.
- */
-export function genDictName(
-  translator: string,
-  langCodes: { from: string; to: string },
-): string {
-  return translator + langCodes.from + '-' + langCodes.to;
-}
-
-
-/**
- * Get translation function depending on which translator is to be used.
- */
-function getTranslatorFunction(
-  translator: string,
-): (text: string, options: { from: string; to: string }) => Promise<string> {
-  if (translator === 'bing') return bingTranslate;
-  if (translator === 'google') return googleTranslate;
-  return deepL;
-}
 
 
 export type TranslationMsg = {
@@ -54,21 +31,34 @@ export type ErrorMsg = {
  * translation requests from content script.
  */
 export default function respondToTranslationRequest(
-  message: TranslationRequest,
+  message: TranslatorRequest,
   _: unknown,
   sendResponse: (response: JSONSerializable) => void,
 ): boolean {
-  const text = message.text;
-  const translate = getTranslatorFunction(message.translator);
+  const translate = (): Promise<string> => {
+    switch (message.translator) {
+      case 'google': {
+        const {translator: _, ...request} = message;
+        return googleTranslate(request);
+      }
+      case 'bing': {
+        const {translator: _, ...request} = message;
+        return bingTranslate(request);
+      }
+      case 'deepL': {
+        const {translator: _, ...request} = message;
+        return deepL(request);
+      }
+    }
+  };
 
-  const dictName = genDictName(message.translator, message.langCodes);
+  const dictName = JSON.stringify([
+    message.translator, message.langCodes.from, message.langCodes.to,
+  ]);
   if (!(dictName in dicts)) {
     dicts[dictName] = {};
   }
 
-  /**
-   * @param{Promise<string>} translationPromise
-   */
   const sendTranslation = (translationPromise: Promise<string>) => {
     // Sending a promise synchronously as a response results in the content
     // script receiving an empty object. This is because `sendResponse` only
@@ -87,11 +77,11 @@ export default function respondToTranslationRequest(
       })
       .catch((error: Error & { code?: string }) => {
         console.error('An error occurred while attempting to translate ' +
-                        `"${text}":\n`, error);
+                        `"${message.text}":\n`, error);
         // Delete entry from `dict`. This prevents e.g. a temporary lack of
         // internet connection from returning an error even when the
         // connection is restored.
-        delete dicts[dictName][text];
+        delete dicts[dictName][message.text];
         sendResponse({
           // 'JSON serialize' error before sending.
           type: 'error',
@@ -103,22 +93,22 @@ export default function respondToTranslationRequest(
   };
 
   // Translation already cached?
-  if (typeof dicts[dictName][text] === 'undefined') {
+  if (typeof dicts[dictName][message.text] === 'undefined') {
     // No, so send request for translation.
-    const translationPromise = translate(text, message.langCodes);
+    const translationPromise = translate();
     // Cache translation.
-    dicts[dictName][text] = translationPromise;
+    dicts[dictName][message.text] = translationPromise;
     sendTranslation(translationPromise);
   } else {
     // Retrieve cached translation.
-    const translationPromise = dicts[dictName][text];
+    const translationPromise = dicts[dictName][message.text];
     sendTranslation(translationPromise);
   }
 
   // To keep the `sendResponse()` function alive after the listener returns, we
   // need to return `true`:
   // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/runtime/onMessage
-  // Unfortunately, the other option described of returning a promise is not
+  // Unfortunately, the other option described of returning a Promise is not
   // supported in Chrome:
   // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/runtime/onMessage#browser_compatibility
   return true;

@@ -1,15 +1,16 @@
+import {DeepLTranslatorRequest} from '../../../types.js';
+
 /**
  * Translate text using the DeepL API.
  * Inspired by the DeepL browser extension.
  */
 export default async function deepL(
-  text: string,
-  options: { from: string; to: string },
+  request: Omit<DeepLTranslatorRequest, 'translator'>,
 ): Promise<string> {
   let timestamp = Date.now();
   // The timestamp needs to be divisible by the number of times the letter 'i'
   // appears in the text to be translated plus one. No joke.
-  const numberOfEyesPlus1 = (text.match(/[i]/g) || []).length + 1;
+  const numberOfEyesPlus1 = (request.text.match(/[i]/g) || []).length + 1;
   timestamp = timestamp - timestamp % numberOfEyesPlus1;
 
   // The 'id' is randomly generated! However, that doesn't mean its value
@@ -20,11 +21,11 @@ export default async function deepL(
     jsonrpc: '2.0',
     method: 'LMT_handle_texts',
     params: {
-      texts: [{text}],
+      texts: [{text: request.text}],
       html: 'enabled',
       lang: {
-        target_lang: options.to,
-        source_lang_user_selected: options.from,
+        target_lang: request.langCodes.to,
+        source_lang_user_selected: request.langCodes.from,
       },
       timestamp,
     },
@@ -52,5 +53,12 @@ export default async function deepL(
   }
 
   const responseData = await response.json();
-  return responseData.result.texts[0].text;
+  const translation = responseData.result?.texts?.[0]?.text;
+  if (typeof translation !== 'string') {
+    throw new Error('DeepL returned no translation.');
+  }
+  if (translation.includes("You're using an older version of DeepL.")) {
+    throw new Error('DeepL no longer supports this extension client version.');
+  }
+  return translation;
 }

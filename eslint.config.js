@@ -7,10 +7,8 @@ import tseslint from 'typescript-eslint';
 import globals from 'globals';
 
 export default defineConfig(
-  // ---- Ignored paths (applies to everything) ----
   {
-    // Globs are relative to this config file. You usually don't need **/*.js
-    // here.
+    // Globs are relative to this config file.
     ignores: [
       'dist/**',
       'browser-profiles/**',
@@ -19,11 +17,9 @@ export default defineConfig(
     ],
   },
 
-  // ---- Base recommended rules ----
   js.configs.recommended,
   ...tseslint.configs.recommended,
 
-  // ---- Your project rules ----
   {
     files: ['**/*.{js,mjs,cjs,ts}'],
     languageOptions: {
@@ -56,6 +52,13 @@ export default defineConfig(
       ],
       'no-restricted-globals': [2, 'event'],
       'max-len': ['error', {code: 80, ignoreUrls: true}],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          varsIgnorePattern: '^_',
+          argsIgnorePattern: '^_',
+        }
+      ],
       // Quote preferences
       quotes: ['error', 'single', {avoidEscape: true}],
       'quote-props': ['error', 'as-needed'],
