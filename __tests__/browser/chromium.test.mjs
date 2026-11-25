@@ -79,6 +79,117 @@ test('a trusted manual CC click recovers after the startup deadline',
     await healthy(f);
   });
 
+for (const scenario of ['panel-empty', 'panel-timeout']) {
+  test(`${scenario} renders interactive Polish and English panel captions`,
+    {timeout: 40000}, async t => {
+      const f = await fixture(productionBrowser, t, {scenario, panel: true,
+        language: 'pl', existingEnglish: true});
+      await f.open();
+      await f.page.evaluate(() => {
+        document.querySelector('video').currentTime = 89.8;
+      });
+      await f.page.waitForFunction(() =>
+        document.querySelector('.translated-subtitle')?.textContent ===
+          'I really like riding a bike.', {timeout: 35000});
+      assert.equal(await f.page.$eval('.original-subtitle', n => n.textContent),
+        'Ja bardzo lubię jeździć na rowerze.');
+      await f.page.$eval('.subtitle-word', button => button.click());
+      await f.page.waitForFunction(expected =>
+        document.querySelector('.translation-bubble')?.textContent === expected,
+      {}, fixtureTranslation);
+      assert.equal(f.panelRequests.length, 2);
+      assert.equal(await f.page.$eval('.ytp-subtitles-button', button =>
+        button.getAttribute('aria-pressed')), 'false');
+      await healthy(f);
+      await f.page.evaluate(() => {
+        document.dispatchEvent(new Event('yt-navigate-start'));
+      });
+      await f.page.waitForFunction(() =>
+        !document.querySelector('.subtitle-container'));
+    });
+}
+
+test('native captions bypass the available panel fallback', async t => {
+  const f = await fixture(productionBrowser, t, {panel: true,
+    existingEnglish: true});
+  await f.open();
+  await f.mounted();
+  await f.page.waitForFunction(() =>
+    document.querySelector('.translated-subtitle')?.textContent ===
+      'Hello world');
+  assert.equal(f.panelRequests.length, 0);
+  await healthy(f);
+});
+
+for (const panelEnglishStatus of [200, 500]) {
+  test(`native source survives English fallback ${panelEnglishStatus}`,
+    async t => {
+      const f = await fixture(productionBrowser, t, {panel: true,
+        existingEnglish: true, emptyEnglish: true, panelEnglishStatus});
+      await f.open();
+      await f.mounted();
+      await f.page.evaluate(() => {
+        document.querySelector('video').currentTime = 89.8;
+        document.querySelector('video').dispatchEvent(new Event('timeupdate'));
+      });
+      if (panelEnglishStatus === 200) {
+        await f.page.waitForFunction(() =>
+          document.querySelector('.translated-subtitle')?.textContent ===
+            'I really like riding a bike.');
+      } else {
+        await f.page.waitForFunction(() => window.fixtureMessages
+          .includes('TRANSCRIPT_PANEL_RESPONSE'));
+      }
+      assert.equal(f.panelRequests.length, 1);
+      assert(Buffer.from(f.panelRequests[0].params, 'base64').includes('.en'));
+      // Return to the native fixture's timeline to exercise the source UI.
+      await f.page.evaluate(() => {
+        document.querySelector('video').currentTime = 1;
+        document.querySelector('video').dispatchEvent(new Event('timeupdate'));
+      });
+      await f.mounted();
+      await healthy(f);
+    });
+}
+
+test('panel 429 remains bounded across repeated startup events',
+  {timeout: 18000}, async t => {
+    const f = await fixture(productionBrowser, t, {scenario: 'panel-empty',
+      panel: true, language: 'pl', existingEnglish: true, panelStatus: 429});
+    await f.open();
+    await f.page.waitForFunction(() => window.fixtureMessages
+      .includes('TRANSCRIPT_PANEL_RESPONSE'));
+    for (let i = 0; i < 3; i++) {
+      await f.page.evaluate(() => {
+        document.dispatchEvent(new Event('playing'));
+      });
+      await f.page.evaluate(() => new Promise(r => setTimeout(r, 300)));
+    }
+    assert.equal(f.panelRequests.length, 1);
+    assert.equal(await f.page.$('.subtitle-container'), null);
+    assert.deepEqual(f.errors, []);
+  });
+
+test('navigation cancels a pending panel and prevents a stale overlay',
+  {timeout: 18000}, async t => {
+    const f = await fixture(productionBrowser, t, {scenario: 'panel-empty',
+      panel: true, language: 'pl', panelDelayed: true});
+    await f.open();
+    await f.page.waitForFunction(() => window.fixtureMessages
+      .includes('TRANSCRIPT_PANEL_REQUEST'));
+    await f.page.evaluate(() => {
+      document.dispatchEvent(new Event('yt-navigate-start'));
+      history.pushState({}, '', '/');
+      document.dispatchEvent(new Event('yt-navigate-finish'));
+    });
+    f.releasePanel();
+    await f.page.waitForFunction(() => window.fixtureMessages
+      .includes('TRANSCRIPT_PANEL_CANCEL'));
+    assert.equal(await f.page.$('.subtitle-container'), null);
+    assert.equal(f.panelRequests.length, 1);
+    assert.deepEqual(f.errors, []);
+  });
+
 for (const scenario of ['early-empty-native', 'early-reopened-native']) {
   test(`native CC-on startup recovers: ${scenario}`, {timeout: 18000},
     async t => {

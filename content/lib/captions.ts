@@ -1,5 +1,6 @@
 import {observeMessages, waitForMessage} from './messages.js';
 import {isAdShowing, observeAdState, waitForContent} from './utils.js';
+import {fetchPanelCaptions} from './panelCaptions.js';
 
 export type Caption = {start: number; end: number; text: string};
 
@@ -59,7 +60,11 @@ function readCaptionBody(body: string): Caption[] {
   if (!Array.isArray(data?.events)) {
     throw new CaptionResponseError('YouTube returned invalid caption data.');
   }
-  try { return parseCaptions(data); } catch {
+  try {
+    const captions = parseCaptions(data);
+    if (!captions.length) throw Error();
+    return captions;
+  } catch {
     throw new CaptionResponseError('YouTube returned invalid caption data.');
   }
 }
@@ -228,9 +233,11 @@ async function translateCaptions(
   signal.addEventListener('abort', abort, {once: true});
   let latest = initial;
   let english = cachedEnglish;
+  let limited = false;
   observeMessages<CaptionResponse>('CAPTION_RESPONSE', controller.signal,
     (response) => {
       if (response?.params?.v !== initial.params.v) return;
+      limited ||= response.status === 429;
       if (response.id > latest.id && nativeCaptions(response)) {
         latest = response;
       }
@@ -243,6 +250,9 @@ async function translateCaptions(
     await delay(1000, controller.signal);
     await waitForContent(controller.signal);
     if (english) return english.captions;
+    if (limited) {
+      throw new CaptionResponseError('YouTube rate limited captions.', 429);
+    }
     return await replayCaptionTrack(latest, preferredEnglishTrack ?? track,
       controller.signal, preferredEnglishTrack ? undefined : 'en');
   } finally {
@@ -255,9 +265,10 @@ async function translateCaptions(
  * An empty response may mean the request was not ready to use. Let the player
  * prepare a request again instead of immediately repeating the failed URL.
  */
-export async function fetchCaptions(
+async function fetchNativeCaptions(
   track: YTCaptionTrack, signal: AbortSignal,
   preferredEnglishTrack?: YTCaptionTrack,
+  rememberEnglish?: (captions: Caption[]) => void,
 ): Promise<{
   captions: Caption[];
   translatedCaptions: Promise<Caption[]>;
@@ -313,7 +324,7 @@ export async function fetchCaptions(
       if (response.id >= lastCompleted) {
         lastCompleted = response.id;
         lastCompletionTime = Date.now();
-        limited = response.status === 429;
+        limited ||= response.status === 429;
         if (response.status === 200 && !response.body.trim()) {
           const key = JSON.stringify(response.params);
           mayReactivate = !emptyContexts.has(key);
@@ -336,6 +347,7 @@ export async function fetchCaptions(
       const candidate = nativeEnglish(response);
       if (candidate && (!english || candidate.id > english.id)) {
         english = candidate;
+        rememberEnglish?.(candidate.captions);
       }
     });
   let button: HTMLElement | null = null;
@@ -376,6 +388,11 @@ export async function fetchCaptions(
       if (captions) break;
       if (limited) {
         throw new CaptionResponseError('YouTube rate limited captions.', 429);
+      }
+      // Allow the player's first fresh activation, but repeated empty results
+      // need not consume the entire startup deadline when a panel is possible.
+      if (track.vssId && !mayReactivate && !active.size) {
+        throw new CaptionResponseError('Native captions remained empty.');
       }
       // A successful download for another track, or a usable request cancelled
       // by the user, can supply the details for our download. Try each saved
@@ -427,7 +444,8 @@ export async function fetchCaptions(
     const translatedCaptions = canTranslate && source &&
       !track.languageCode.startsWith('en') ?
       translateCaptions(source, track, signal, english, preferredEnglishTrack) :
-      Promise.resolve([]);
+      limited && !english ? Promise.reject(new CaptionResponseError(
+        'YouTube rate limited captions.', 429)) : Promise.resolve([]);
     void translatedCaptions.catch(() => {});
     return {captions, translatedCaptions};
   } finally {
@@ -440,4 +458,46 @@ export async function fetchCaptions(
       button.click();
     }
   }
+}
+
+/** Native acquisition owns CC cleanup. Only after it exits do we request a
+ * transcript, with the navigation signal rather than the expired native timer.
+ * English has its own failure boundary and never discards working source cues.
+ */
+export async function fetchCaptions(
+  track: YTCaptionTrack, signal: AbortSignal,
+  preferredEnglishTrack?: YTCaptionTrack,
+): Promise<{captions: Caption[]; translatedCaptions: Promise<Caption[]>}> {
+  const fallback = async (selected: YTCaptionTrack | undefined,
+    error?: unknown): Promise<Caption[]> => {
+    signal.throwIfAborted();
+    if (error instanceof CaptionResponseError && error.status === 429) {
+      throw error;
+    }
+    if (!selected?.vssId) {
+      if (error) throw error;
+      return [];
+    }
+    await waitForContent(signal);
+    return fetchPanelCaptions(selected, signal);
+  };
+  let result;
+  let nativeEnglish: Caption[] | undefined;
+  try {
+    result = await fetchNativeCaptions(track, signal, preferredEnglishTrack,
+      captions => nativeEnglish = captions);
+  } catch (error) {
+    const captions = await fallback(track, error);
+    if (!captions.length) throw error;
+    const translatedCaptions = nativeEnglish ? Promise.resolve(nativeEnglish) :
+      fallback(preferredEnglishTrack);
+    void translatedCaptions.catch(() => {});
+    return {captions, translatedCaptions};
+  }
+  const translatedCaptions = result.translatedCaptions.then(
+    cues => cues.length ? cues : fallback(preferredEnglishTrack),
+    error => fallback(preferredEnglishTrack, error),
+  );
+  void translatedCaptions.catch(() => {});
+  return {captions: result.captions, translatedCaptions};
 }

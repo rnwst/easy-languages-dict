@@ -6,10 +6,13 @@
  */
 import {installAwaitCaptionDecoration} from './lib/awaitCaptionDecoration.js';
 import {installCaptionReplay} from './lib/captionReplay.js';
+import {installTranscriptPanel} from './lib/transcriptPanelBridge.js';
 
 declare global {
   interface Window {
     ytInitialPlayerResponse?: YTVideoMetadata;
+    ytcfg?: {get: (key: string) => unknown};
+    ytInitialData?: unknown;
   }
 }
 
@@ -30,7 +33,12 @@ declare global {
   installAwaitCaptionDecoration((status) => {
     send('CAPTION_DECORATION_STATUS', status);
   });
-  const replay = installCaptionReplay();
+  const panel = installTranscriptPanel({
+    metadata: currentMetadata,
+    context: () => window.ytcfg?.get('INNERTUBE_CONTEXT'),
+    initialData: () => window.ytInitialData,
+  });
+  const replay = installCaptionReplay({onRateLimit: panel.rateLimit});
   const describeRequest = (
     address: string, method: string, headers: Headers,
   ) => {
@@ -64,6 +72,7 @@ declare global {
     outcome: CaptionResponse['outcome'] = 'load',
   ) => {
     const content = {...request, status, body, outcome};
+    if (status === 429) panel.rateLimit(request.params.v);
     activeRequests.delete(String(request.id));
     // Save failures too. A script asking for earlier results needs to know
     // which requests have finished, rather than keep waiting for them.
@@ -80,27 +89,27 @@ declare global {
       ) ?? [],
     },
   });
+  function currentMetadata(id: string): YTVideoMetadata | undefined {
+    let current: YTVideoMetadata | undefined;
+    try {
+      const player = document.getElementById('movie_player') as
+        (HTMLElement & {getPlayerResponse?: () => YTVideoMetadata}) | null;
+      current = player?.getPlayerResponse?.();
+    } catch { /* Player initialization may still be in progress. */ }
+    const candidates = [current, metadataResponses.get(id),
+      window.ytInitialPlayerResponse]
+      .filter(value => value?.videoDetails?.videoId === id);
+    return candidates.find(value => value?.captions) ?? candidates[0];
+  }
   window.addEventListener('message', (evt) => {
     if (evt.source !== window || evt.origin !== location.origin ||
         evt.data?.origin !== origin) return;
     if (evt.data.type === 'VIDEO_METADATA_REQUEST') {
       const id = evt.data.videoId;
-      const cached = metadataResponses.get(id);
-      const initial = window.ytInitialPlayerResponse;
       // When switching videos, YouTube may update the player without setting
       // ytInitialPlayerResponse or making a request we observed. Ask the player
       // itself for the video information as another way to obtain it.
-      let current: YTVideoMetadata | undefined;
-      try {
-        const player = document.getElementById('movie_player') as
-          (HTMLElement & {getPlayerResponse?: () => YTVideoMetadata}) | null;
-        current = player?.getPlayerResponse?.();
-      } catch { /* Player initialization may still be in progress. */ }
-      // During a video change, some data may still describe the previous video.
-      const candidates = [current, cached, initial]
-        .filter((value) => value?.videoDetails?.videoId === id);
-      const value = metadata(candidates.find((value) => value?.captions) ??
-        candidates[0]);
+      const value = metadata(currentMetadata(id));
       if (value) send('VIDEO_METADATA', value);
     } else if (evt.data.type === 'CAPTION_STATE_REQUEST') {
       for (const request of activeRequests.values()) {

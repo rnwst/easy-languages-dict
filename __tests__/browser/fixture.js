@@ -6,10 +6,16 @@ export async function fixture(browser, t, options = {}) {
   const {scenario = 'normal', initialOn = false, delayed = false,
     translatable = false, englishStatus = 200,
     language = 'de', audioLanguage, existingEnglish = false,
-    adStartup = 0} = options;
+    adStartup = 0, panel = false, panelStatus = 200,
+    panelEnglishStatus = 200, emptyEnglish = false,
+    panelDelayed = false} = options;
   const page = await browser.newPage();
   await page.setViewport({width: 800, height: 600});
   const requests = [];
+  const panelRequests = [];
+  let releasePanel;
+  const panelGate = panelDelayed ? new Promise(r => releasePanel = r) :
+    Promise.resolve();
   const logs = [];
   const errors = [];
   let startupFailure;
@@ -25,6 +31,7 @@ export async function fixture(browser, t, options = {}) {
     videoDetails: {videoId},
     captions: {playerCaptionsTracklistRenderer: {captionTracks: [{
       languageCode: language, isTranslatable: translatable,
+      ...(panel ? {vssId: '.' + language} : {}),
       baseUrl: `https://www.youtube.com/api/timedtext?v=${videoId}` +
         `&lang=${language}&signature=stale&ei=stale` +
         '&expire=stale&sparams=v,ei,expire',
@@ -33,6 +40,7 @@ export async function fixture(browser, t, options = {}) {
   if (existingEnglish) {
     metadata.captions.playerCaptionsTracklistRenderer.captionTracks.push({
       languageCode: 'en-GB', isTranslatable: false,
+      ...(panel ? {vssId: '.en'} : {}),
       baseUrl: `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en-GB`,
     });
   }
@@ -67,6 +75,7 @@ export async function fixture(browser, t, options = {}) {
     .ytp-caption-window-container{position:absolute;top:60px;color:white}
     </style><script>
     const metadata=${JSON.stringify(metadata)};
+    window.ytcfg={get:()=>({client:{clientName:'WEB'}})};
     window.fixtureMessages=[];window.trustedClicks=[];
     window.trustedKeys=[];window.starts=0;window.captionClicks=0;
     window.reopenAbortEvents=0;
@@ -76,6 +85,7 @@ export async function fixture(browser, t, options = {}) {
     let currentRequest;
     function startCaptions(){
       starts++;
+      if(${scenario === 'panel-timeout'})return;
       const xhr=new XMLHttpRequest();currentRequest=xhr;
       if(${reopen}&&starts===1)
         xhr.addEventListener('abort',()=>window.reopenAbortEvents++);
@@ -168,6 +178,17 @@ export async function fixture(browser, t, options = {}) {
       } else if (url.pathname === '/youtubei/v1/player') {
         await request.respond({contentType: 'application/json',
           body: JSON.stringify(metadata)});
+      } else if (url.pathname === '/youtubei/v1/get_panel') {
+        const body = JSON.parse(request.postData());
+        panelRequests.push(body);
+        await panelGate;
+        const english = Buffer.from(body.params, 'base64').includes('.en');
+        const status = english ? panelEnglishStatus : panelStatus;
+        const data = await fs.readFile(new URL(
+          `../fixtures/panel-${english ? 'en' : 'pl'}.json`, import.meta.url),
+        'utf8');
+        await request.respond({status, contentType: 'application/json',
+          body: status === 200 ? data.replaceAll('Z9PRhksKFqU', videoId) : ''});
       } else if (url.pathname === '/api/timedtext') {
         requests.push(Object.fromEntries(url.searchParams));
         if (url.searchParams.has('abandoned')) {
@@ -177,7 +198,9 @@ export async function fixture(browser, t, options = {}) {
         if (request.failure()?.errorText === 'net::ERR_ABORTED') return;
         const bad = scenario === 'fresh-signature' &&
           url.searchParams.get('signature') !== 'fresh';
-        const empty = (scenario === 'late-manual' &&
+        const empty = scenario === 'panel-empty' ||
+          (emptyEnglish && url.searchParams.get('lang') === 'en-GB') ||
+          (scenario === 'late-manual' &&
           !url.searchParams.has('manual')) ||
           (earlyEmpty && !url.searchParams.has('pot'));
         const english = url.searchParams.get('tlang') === 'en' ||
@@ -208,11 +231,14 @@ export async function fixture(browser, t, options = {}) {
     if (!t.passed) t.diagnostic(JSON.stringify({scenario, requests, logs,
       errors, documents}));
     release?.();
+    releasePanel?.();
     if (!page.isClosed()) await page.close();
   });
-  return {page, requests, logs, errors, startupFailed, translationFailed,
+  return {page, requests, panelRequests, logs, errors, startupFailed,
+    translationFailed, releasePanel: () => releasePanel?.(),
     release: () => release?.(),
     documents: () => documents,
     open: () => page.goto(watchURL, {waitUntil: 'load'}),
     mounted: () => page.waitForSelector('.subtitle-word', {timeout: 15000})};
 }
+import fs from 'node:fs/promises';

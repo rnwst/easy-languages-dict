@@ -16,6 +16,14 @@ The browser separates YouTube's JavaScript from the extension's JavaScript. `con
 
 Cached English captions and existing English tracks are preferred over auto-translation. Additional requests are not automatically repeated after an empty response or HTTP error, including HTTP 429. Startup recovery can ask the player to prepare another request a limited number of times. If English retrieval fails after source captions have loaded, those source captions and word lookup remain available. Intermittent startup failures with native CC already enabled, and empty responses even with tokens present, remain known limitations.
 
+### Transcript fallback for unreliable CC downloads
+
+YouTube sometimes reports a successful CC download (HTTP 200) but sends no captions; the cause is unknown. When normal captions repeatedly arrive empty, fail, or do not load within 25 seconds (excluding ads), the extension can try the service behind “Show transcript” without opening the panel. Normal CC downloads remain preferred because their timing is more precise.
+
+The transcript fallback makes at most one attempt per track per video visit, including across startup retries. HTTP 429 means YouTube is limiting requests and stops further transcript requests for that visit. Leaving the video cancels pending work. English is fetched separately from an existing English track: if it fails, source-language subtitles and word lookup still work.
+
+The fallback lives in `content/lib/transcriptPanelBridge.ts` and `content/lib/transcriptPanel.ts`. A live Chromium check of `Z9PRhksKFqU` returned 115 Polish and 115 English segments and displayed both lines despite empty CC downloads. Saved, sanitized samples cover this in automated tests. The transcript service is undocumented and may also fail or change; its observed start times are rounded to whole seconds.
+
 
 ## Building and Testing the Extension
 
