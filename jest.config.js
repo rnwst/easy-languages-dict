@@ -1,6 +1,10 @@
 /** @type {import('jest').Config} */
 export default {
-  testPathIgnorePatterns: ['/node_modules/', '/__tests__/browser/'],
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/__tests__/browser/',
+    '/__tests__/background/translators/live/',
+  ],
   moduleNameMapper: {
     // When an import ends with ".js", let Jest also try the same path without
     // the extension, which allows it to resolve the .ts source file during

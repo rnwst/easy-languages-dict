@@ -41,6 +41,13 @@ The extension is not available for Safari, for the following reasons:
 - Safari [doesn't support some WebExtension APIs](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/webNavigation/onHistoryStateUpdated#browser_compatibility) which this extension relies on.
 
 
+## Tests
+
+Run `npm test` for unit tests or `npm run test-coverage` for coverage. Translator
+unit tests use mocked service responses and run in CI. Real-service checks are
+opt-in via `npm run test-live`; see the [live translator test guide](./__tests__/background/translators/live/README.md).
+
+
 ## License
 
 © R.&thinsp;N. West, 2023-2024. Released under the [GPL](https://www.gnu.org/licenses/old-licenses/gpl-2.0.html) version 2 or greater. This software carries no warranty of any kind. Note that the license only covers the code published in this repository and not any trademarks. If you redistribute the software, modified or unmodified, make sure to change its name and icons so that your derivative cannot be mistaken for the original.
