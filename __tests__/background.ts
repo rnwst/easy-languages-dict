@@ -64,8 +64,8 @@ describe('translators', () => {
   });
 
   describe('deepL', () => {
-    it('translates sentence with lots of \'i\'s', async () => {
-      await expect(Promise.all([
+    it('translates sentences into different languages', async () => {
+      const translations = await Promise.all([
         deepL({
           text: 'iguanas ingest insects',
           langCodes: {from: 'EN', to: 'ZH'},
@@ -78,7 +78,10 @@ describe('translators', () => {
           text: 'incredible iguanas illuminate intricate, imaginary islands',
           langCodes: {from: 'EN', to: 'PL'},
         }),
-      ])).resolves.toBeTruthy();
+      ]);
+      expect(translations[0]).toMatch(/\p{Script=Han}/u);
+      expect(translations[1]).toMatch(/iglous|igloos/i);
+      expect(translations[2]).toMatch(/legwan|iguan/i);
     });
 
     it('translates', async () => {
@@ -90,6 +93,14 @@ describe('translators', () => {
         },
       });
       expect(translation).toEqual('Hallo');
+    });
+
+    it('preserves the translated word’s context tags', async () => {
+      const translation = await deepL({
+        text: 'Ich sitze auf der <b>Bank</b> am Fluss.',
+        langCodes: {from: 'DE', to: 'EN-GB'},
+      });
+      expect(translation).toMatch(/<b>bench<\/b>/i);
     });
   });
 });

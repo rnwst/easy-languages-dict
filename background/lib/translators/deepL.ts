@@ -7,38 +7,21 @@ import {DeepLTranslatorRequest} from '../../../types.js';
 export default async function deepL(
   request: Omit<DeepLTranslatorRequest, 'translator'>,
 ): Promise<string> {
-  let timestamp = Date.now();
-  // The timestamp needs to be divisible by the number of times the letter 'i'
-  // appears in the text to be translated plus one. No joke.
-  const numberOfEyesPlus1 = (request.text.match(/[i]/g) || []).length + 1;
-  timestamp = timestamp - timestamp % numberOfEyesPlus1;
-
-  // The 'id' is randomly generated! However, that doesn't mean its value
-  // doesn't matter. See below.
-  const id = crypto.getRandomValues(new Uint32Array(1))[0];
-
-  let body = JSON.stringify({
-    jsonrpc: '2.0',
-    method: 'LMT_handle_texts',
-    params: {
-      texts: [{text: request.text}],
-      html: 'enabled',
-      lang: {
-        target_lang: request.langCodes.to,
-        source_lang_user_selected: request.langCodes.from,
-      },
-      timestamp,
-    },
-    id,
+  // DeepL's internal tarnslation endpoint expects BCP 47 casing (e.g. en-GB,
+  // zh-Hans), rather than the uppercase codes used by the legacy JSON-RPC
+  // endpoint.
+  const targetAliases: Record<string, string> = {
+    EN: 'en-US', PT: 'pt-BR', ZH: 'zh-Hans',
+  };
+  const body = JSON.stringify({
+    text: [request.text],
+    source_lang: new Intl.Locale(request.langCodes.from).toString(),
+    target_lang: targetAliases[request.langCodes.to] ??
+      new Intl.Locale(request.langCodes.to).toString(),
+    tag_handling: 'html',
   });
 
-  // The observant web developer will notice one or two seemingly random spaces
-  // sprinkled into the raw JSON sent to the DeepL servers. They are not random.
-  body = ((id + 3) % 13 == 0 || (id + 5) % 29 == 0) ?
-    body.replace('"method":"', '"method" : "') :
-    body.replace('"method":"', '"method": "');
-
-  const response = await fetch('https://www2.deepl.com/jsonrpc?client=chrome-extension,1.14.0', {
+  const response = await fetch('https://oneshot-free.www.deepl.com/v1/translate', {
     method: 'POST',
     headers: {
       Authorization: 'None',
@@ -53,8 +36,8 @@ export default async function deepL(
   }
 
   const responseData = await response.json();
-  const translation = responseData.result?.texts?.[0]?.text;
-  if (typeof translation !== 'string') {
+  const translation = responseData?.translations?.[0]?.text;
+  if (typeof translation !== 'string' || translation.trim() === '') {
     throw new Error('DeepL returned no translation.');
   }
   if (translation.includes("You're using an older version of DeepL.")) {

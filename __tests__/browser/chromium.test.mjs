@@ -392,7 +392,7 @@ for (const pageBeforeInstall of [false, true]) {
           globalThis.translationRequests.map(request => request.url));
         assert.equal(calls.length, 2);
         assert(calls.some(url => url.includes('translate.googleapis.com')));
-        assert(calls.some(url => url.includes('www2.deepl.com')));
+        assert(calls.includes('https://oneshot-free.www.deepl.com/v1/translate'));
         await healthy(f);
       }
       await translate(extension.worker, 'before-reload');

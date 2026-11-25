@@ -55,8 +55,8 @@ export async function translations(worker, label = 'translation') {
       let response;
       if (url.startsWith('https://translate.googleapis.com/')) {
         response = [[[label]]];
-      } else if (url.startsWith('https://www2.deepl.com/')) {
-        response = {result: {texts: [{text: `<b>${label}</b> world`}]}};
+      } else if (url === 'https://oneshot-free.www.deepl.com/v1/translate') {
+        response = {translations: [{text: `<b>${label}</b> world`}]};
       } else {
         throw new Error(`Unexpected background request: ${url}`);
       }

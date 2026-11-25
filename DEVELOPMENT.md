@@ -40,7 +40,7 @@ Watch mode launches the browser through [web-ext](https://github.com/mozilla/web
 ### Checks
 
 - `npm run type-check` checks source files and tests using the project's TypeScript version. The pre-commit type-check hook uses this command too.
-- `npm test` runs Jest. Some tests call live translation services, so it is not an entirely offline suite. The legacy DeepL client is currently rejected by the service; its direct integration tests can fail even though provider fallback is working.
+- `npm test` runs Jest. Some tests call live translation services, so it is not an entirely offline suite. DeepL uses the anonymous Oneshot endpoint; service availability and rate limits can affect its live integration tests.
 - `npm run test-coverage` runs Jest with coverage reporting.
 - `npm run lint` runs ESLint and Stylelint. The current script separates them with `;`, so check both outputs; a successful Stylelint run can hide ESLint's failing exit status. They can also be run separately with `npx --no-install eslint .` and `npx --no-install stylelint '**/*.css'`.
 - `npm run test-browser` runs opt-in Chromium integration tests using temporary builds/profiles and locally supplied server responses. See [browser test setup and coverage](./__tests__/browser/README.md).

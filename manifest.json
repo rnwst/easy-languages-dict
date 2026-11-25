@@ -41,7 +41,7 @@
     "https://translate.googleapis.com/*",
     "https://www.bing.com/translator",
     "https://www.bing.com/ttranslatev3?*",
-    "https://www2.deepl.com/jsonrpc?*"
+    "https://oneshot-free.www.deepl.com/v1/translate"
   ],
 
   "web_accessible_resources": [],
