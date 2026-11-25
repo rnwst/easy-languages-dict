@@ -21,6 +21,8 @@ Cached English captions and existing English tracks are preferred over auto-tran
 
 ### Get Started
 
+Use Node.js 22.22.2+, 24.15.0+, or 26+ (the supported release lines required by the build and lint dependencies).
+
 ```console
 git clone "https://github.com/rnwst/easy-languages-dict.git"
 cd easy-languages-dict
@@ -40,12 +42,16 @@ Watch mode launches the browser through [web-ext](https://github.com/mozilla/web
 ### Checks
 
 - `npm run type-check` checks source files and tests using the project's TypeScript version. The pre-commit type-check hook uses this command too.
-- `npm test` runs Jest. Some tests call live translation services, so it is not an entirely offline suite. DeepL uses the anonymous Oneshot endpoint; service availability and rate limits can affect its live integration tests.
+- `npm test` runs the mocked Jest suites. `npm run test-live` separately checks the real translation services; availability and rate limits can affect those opt-in tests.
 - `npm run test-coverage` runs Jest with coverage reporting.
-- `npm run lint` runs ESLint and Stylelint. The current script separates them with `;`, so check both outputs; a successful Stylelint run can hide ESLint's failing exit status. They can also be run separately with `npx --no-install eslint .` and `npx --no-install stylelint '**/*.css'`.
+- `npm run lint` runs ESLint and Stylelint and fails if either check fails.
 - `npm run test-browser` runs opt-in Chromium integration tests using temporary builds/profiles and locally supplied server responses. See [browser test setup and coverage](./__tests__/browser/README.md).
 
 The automated browser suite currently covers Chromium only. Its successful fixture tests do not establish live YouTube/provider availability or Firefox/Android behavior.
+
+TypeScript is pinned to 6.0.3: `typescript-eslint` 8.74 supports TypeScript versions below 6.1, and the build's type-check plugin uses the compiler API removed in TypeScript 7. Upgrade the lint integration and build plugin before moving to TypeScript 7. Other direct dependencies use their latest stable releases as of November 2026.
+
+The scoped `babel-jest` override aligns the legacy syntax plugins' Babel peer requirements with Babel 8. `babel-preset-current-node-syntax` explicitly omits those Babel-7-only plugins when running with Babel 8, but still installs them. Remove the override when that preset's dependencies support Babel 8 directly.
 
 
 ### Desktop Browser Profiles

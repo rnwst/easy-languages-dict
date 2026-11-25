@@ -1,6 +1,6 @@
 import {defineConfig} from 'eslint/config';
 import js from '@eslint/js';
-import pluginImport from 'eslint-plugin-import';
+import pluginImport from 'eslint-plugin-import-x';
 import pluginJest from 'eslint-plugin-jest';
 import pluginJsdoc from 'eslint-plugin-jsdoc';
 import tseslint from 'typescript-eslint';
@@ -34,15 +34,15 @@ export default defineConfig(
       },
     },
     plugins: {
-      import: pluginImport,
+      'import-x': pluginImport,
       jest: pluginJest,
       jsdoc: pluginJsdoc,
       '@typescript-eslint': tseslint.plugin,
     },
     rules: {
-      'import/no-unresolved': ['error', {ignore: ['^svgo$']}],
-      'import/no-commonjs': 2,
-      'import/extensions': [
+      'import-x/no-unresolved': ['error', {ignore: ['^svgo$']}],
+      'import-x/no-commonjs': 2,
+      'import-x/extensions': [
         2,
         'never',
         {
@@ -82,7 +82,7 @@ export default defineConfig(
       '@typescript-eslint/indent': ['off'],
     },
     settings: {
-      'import/resolver': {
+      'import-x/resolver': {
         typescript: true,
         node: true,
       },
