@@ -13,7 +13,7 @@ import * as adbUtils from 'web-ext/util/adb';
 import {optimize as optimizeSVG} from 'svgo';
 import {convert as svg2png} from 'convert-svg-to-png';
 import {executablePath} from 'puppeteer';
-import archiver from 'archiver';
+import {ZipArchive} from 'archiver';
 import {watchBuild, refreshDevelopmentTabs} from './watch-build.js';
 
 
@@ -255,7 +255,7 @@ async function buildIcon(svgIcon, icon, size, distDir) {
     // https://bugs.chromium.org/p/chromium/issues/detail?id=29683.
     console.log(
       `Converting ${svgIcon} to PNG and writing to dist`);
-    const puppeteerLaunchOptions = {executablePath};
+    const puppeteerLaunchOptions = {executablePath: await executablePath()};
     // Needed for puppeteer to work in GitHub workflows.
     if (process.env.CI) puppeteerLaunchOptions.args = ['--no-sandbox'];
     const png =
@@ -349,7 +349,7 @@ function esbuildOptions(entryPoint, distDir, plugin) {
  * @return {Promise<void>}
  */
 function zipDirectory(sourceDir, outPath) {
-  const archive = archiver('zip', {zlib: {level: 9}});
+  const archive = new ZipArchive({zlib: {level: 9}});
   const stream = fs.createWriteStream(outPath);
 
   return new Promise((resolve, reject) => {

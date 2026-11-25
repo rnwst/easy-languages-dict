@@ -1,7 +1,8 @@
 export default {
   presets: [
     ['@babel/preset-env', {targets: {node: 'current'}}],
-    '@babel/preset-typescript',
+    // Preserve implicit type-import removal after Babel 8 changed the default.
+    ['@babel/preset-typescript', {onlyRemoveTypeImports: false}],
   ],
   env: {
     test: {
