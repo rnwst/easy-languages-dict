@@ -8,6 +8,7 @@ const allowed = new Set(['lang', 'kind', 'name', 'tlang', 'fmt']);
 export function installCaptionReplay(options: {
   root?: Window;
   fetch?: typeof fetch;
+  onRateLimit?: (videoId: string) => void;
 } = {}): {remember(id: number, url: string, headers: Headers): void} {
   const root = options.root ?? window;
   const nativeFetch = options.fetch ?? root.fetch;
@@ -116,6 +117,9 @@ export function installCaptionReplay(options: {
           method: 'GET', headers, credentials: 'include', redirect: 'error',
           signal: controller.signal,
         });
+        if (!controller.signal.aborted && response.status === 429) {
+          options.onRateLimit?.(url.searchParams.get('v')!);
+        }
         const body = await response.text();
         if (!validURL(url.href)) {
           finish(0, '', 'Caption replay context changed');

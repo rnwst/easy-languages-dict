@@ -102,6 +102,11 @@ chrome.runtime.onMessage.addListener((message) => {
 });
 // Also handles navigation in browsers where background notification is delayed.
 document.addEventListener('yt-navigate-finish', () => navigate());
+document.addEventListener('yt-navigate-start', () => {
+  current.abort();
+  videoId = null;
+  state = 'idle';
+});
 // If startup failed while the player was still being initialized, a later
 // user-initiated playback can retry without requiring a page reload.
 document.addEventListener('playing', () => {

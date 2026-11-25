@@ -1,0 +1,34 @@
+{
+  "content": {"engagementPanelSectionListRenderer": {"content": {"sectionListRenderer": {"contents": [{"itemSectionRenderer": {
+    "sectionIdentifier": "timeline_view_section0",
+    "contents": [
+      {"macroMarkersPanelItemViewModel": {
+        "index": 8, "panelId": "PAmodern_transcript_view",
+        "markersEngagementPanelSyncEntityKey": "sanitized-sync-key",
+        "onTap": {"innertubeCommand": {"watchEndpoint": {"videoId": "Z9PRhksKFqU"}}},
+        "item": {"timelineItemViewModel": {"contentItems": [{"transcriptSegmentViewModel": {"simpleText": "I have special cycling glasses. And this is my bike."}}]}}
+      }},
+      {"macroMarkersPanelItemViewModel": {
+        "index": 9, "panelId": "PAmodern_transcript_view",
+        "markersEngagementPanelSyncEntityKey": "sanitized-sync-key",
+        "onTap": {"innertubeCommand": {"watchEndpoint": {"videoId": "Z9PRhksKFqU"}}},
+        "item": {"timelineItemViewModel": {"contentItems": [{"transcriptSegmentViewModel": {"simpleText": "I really like riding a bike."}}]}}
+      }},
+      {"macroMarkersPanelItemViewModel": {
+        "index": 10, "panelId": "PAmodern_transcript_view",
+        "markersEngagementPanelSyncEntityKey": "sanitized-sync-key",
+        "onTap": {"innertubeCommand": {"watchEndpoint": {"videoId": "Z9PRhksKFqU"}}},
+        "item": {"timelineItemViewModel": {"contentItems": [{"transcriptSegmentViewModel": {"simpleText": "You could say I love it. I love riding a bike. Here's"}}]}}
+      }}
+    ]
+  }}]}}}},
+  "frameworkUpdates": {"entityBatchUpdate": {"mutations": [{"payload": {"timedMarkersListSyncEntity": {
+    "key": "sanitized-timing-key", "timedListData": {"sections": [{
+      "sectionId": "timeline_view_section0", "timedSyncDataList": [
+        {"videoTimeMs": "76000", "endTimeMs": "85190", "syncItemId": "timeline_view_sync_item0_8"},
+        {"videoTimeMs": "85000", "endTimeMs": "91350", "syncItemId": "timeline_view_sync_item0_9"},
+        {"videoTimeMs": "91000", "endTimeMs": "102270", "syncItemId": "timeline_view_sync_item0_10"}
+      ]
+    }]}
+  }}}]}}
+}

@@ -6,6 +6,7 @@ type YTCaptionTrack = {
     simpleText: string;
   };
   languageCode: string;
+  vssId?: string;
   kind?: 'asr';
   isTranslatable: boolean;
 }
@@ -67,4 +68,12 @@ type CaptionReplayResponse = {
   status: number;
   body: string;
   error?: string;
+};
+
+type TranscriptPanelResponse = {
+  operationId: string;
+  videoId: string;
+  vssId: string;
+  captions: import('./lib/captions.js').Caption[];
+  outcome: 'success' | 'unavailable' | 'rate-limited' | 'cancelled';
 };

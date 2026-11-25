@@ -18,5 +18,7 @@ export default class FixedJSDOMEnvironment extends TestEnvironment {
     this.global.Headers = Headers;
     this.global.Request = Request;
     this.global.Response = Response;
+    this.global.TextEncoder = TextEncoder;
+    this.global.TextDecoder = TextDecoder;
   }
 }
