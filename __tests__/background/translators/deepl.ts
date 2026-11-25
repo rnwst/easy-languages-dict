@@ -1,5 +1,5 @@
-import deepL from '../background/lib/translators/deepL.js';
-import {DeeplToLangCode} from '../types.js';
+import deepL from '../../../background/lib/translators/deepL.js';
+import {DeeplToLangCode} from '../../../types.js';
 
 describe('DeepL Oneshot', () => {
   const request = {
@@ -19,7 +19,7 @@ describe('DeepL Oneshot', () => {
 
   afterEach(() => jest.restoreAllMocks());
 
-  it('is correctly mocked', async () => {
+  it('sends context tags and parses the translation', async () => {
     await expect(deepL(request)).resolves.toBe(
       'I’m sitting on the <b>bench</b> by the river.',
     );

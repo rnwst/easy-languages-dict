@@ -15,7 +15,17 @@ export default async function googleTranslate(
   const url =
       'https://translate.googleapis.com/translate_a/single?client=gtx&dt=t' +
       urlAppendix;
-  return fetch(url)
-    .then((response) => response.json())
-    .then((json) => json[0][0][0] as string);
+  const response = await fetch(url);
+  if (response.status != 200) {
+    throw new Error(
+      `Received status code ${response.status} from Google Translate.`
+    );
+  }
+
+  const responseData = await response.json();
+  const translation = responseData?.[0]?.[0]?.[0];
+  if (typeof translation !== 'string' || translation.trim() === '') {
+    throw new Error('Google Translate returned no translation.');
+  }
+  return translation;
 }

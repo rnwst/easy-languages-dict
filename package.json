@@ -11,6 +11,7 @@
     "start-firefox-desktop": "node scripts/build watch firefox-desktop",
     "start-firefox-android": "node scripts/build watch firefox-android",
     "test": "jest --verbose",
+    "test-live": "jest --config jest.live.config.js --verbose --runInBand",
     "type-check": "tsc --noEmit",
     "test-browser": "node --test __tests__/browser/chromium.test.mjs",
     "test-coverage": "jest --coverage"
