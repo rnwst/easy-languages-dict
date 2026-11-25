@@ -1,5 +1,3 @@
-// This declaration for web-ext is AI-generated. It may contain mistakes.
-
 declare module 'web-ext' {
   /**
    * Extra config that is not part of the CLI flags, passed as the 2nd argument
@@ -72,6 +70,8 @@ declare module 'web-ext' {
   export interface ExtensionRunner {
     /** Reload all installed temporary extensions. */
     reloadAllExtensions(): void | Promise<void>;
+    /** Register a callback to run when the browser / runner exits. */
+    registerCleanup(callback: () => void | Promise<void>): void;
     /** Exit the spawned browser / runner. */
     exit(): void | Promise<void>;
     /** web-ext may expose more fields in the future. */
