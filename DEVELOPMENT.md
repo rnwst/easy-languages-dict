@@ -41,7 +41,7 @@ Watch mode launches the browser through [web-ext](https://github.com/mozilla/web
 
 ### Checks
 
-- `npm run type-check` checks source files and tests using the project's TypeScript version. The pre-commit type-check hook uses this command too.
+- `npm run type-check` checks source files, tests, and the JavaScript build scripts using the project's TypeScript version. The pre-commit type-check hook uses this command too.
 - `npm test` runs the mocked Jest suites. `npm run test-live` separately checks the real translation services; availability and rate limits can affect those opt-in tests.
 - `npm run test-coverage` runs Jest with coverage reporting.
 - `npm run lint` runs ESLint and Stylelint and fails if either check fails.

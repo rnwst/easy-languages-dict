@@ -4,6 +4,7 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "strict": true,
+    "allowJs": true,
     "types": ["chrome", "jest", "node"],
     "noEmit": true,
     "skipLibCheck": true,
@@ -11,7 +12,8 @@
     "forceConsistentCasingInFileNames": true
   },
   "include": [
-    "**/*.ts"
+    "**/*.ts",
+    "scripts/**/*.js"
   ],
   "exclude": [
     "node_modules",

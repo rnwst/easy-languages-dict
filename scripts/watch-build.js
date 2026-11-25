@@ -16,7 +16,9 @@ export function watchBuild({snapshot, initial, build, publish, onError,
   delay = 250}) {
   let stopped = false;
   let previous = initial;
+  /** @type {string | undefined} */
   let attempted = initial;
+  /** @type {ReturnType<typeof setTimeout>} */
   let timer;
 
   const tick = async () => {

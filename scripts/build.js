@@ -21,7 +21,7 @@ const dist = 'dist/';
 
 
 /**
- * @return {array} - Arguments passed to this script.
+ * @return {string[]} - Arguments passed to this script.
  */
 function getArgs() {
   return process.argv.slice(2);
@@ -33,7 +33,6 @@ function getArgs() {
  */
 function exitIfIncorrectArgs() {
   const args = getArgs();
-  /** @type{Array<Browser>} browsers */
   const browsers = ['chromium', 'edge', 'firefox-desktop', 'firefox-android'];
   if (args.length === 0) return;
   if (args.length === 2 && args[0] === 'watch' && browsers.includes(args[1])) {
@@ -110,7 +109,6 @@ function convertMV3ToMV2(manifestV3) {
     'description',
     'icons',
     'content_scripts',
-    'background',
     'permissions',
     'web_accessible_resources',
     'minimum_chrome_version',
@@ -118,24 +116,25 @@ function convertMV3ToMV2(manifestV3) {
   ]) {
     manifestV2[key] = manifestV3[key];
   }
-  manifestV2.background = {...manifestV3.background};
-  manifestV2.background.scripts = [manifestV3.background.service_worker];
-  delete manifestV2.background.service_worker;
-  delete manifestV2.background.type;
   // Background scripts in MV3 are always non-persistent, but can be persistent
   // in MV2 (non-persistent background scripts are sometimes referred to as
   // 'event pages'). They should not be persistent on Firefox on Android:
   // https://blog.mozilla.org/addons/2023/08/10/prepare-your-firefox-desktop-extension-for-the-upcoming-android-release/
-  manifestV2.background.persistent = false;
+  if (manifestV3.background) {
+    manifestV2.background = {
+      scripts: [manifestV3.background.service_worker],
+      persistent: false,
+    };
+  }
   // `web_accessible_resources` are defined differently in MV3 vs MV2. See
   // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/web_accessible_resources.
-  manifestV2.web_accessible_resources = manifestV3.web_accessible_resources
-    .map(
-      /** @param{{ resources: Array<String>,
-                     matches: Array<String> }} resource */
-      (resource) => resource.resources
-    ).flat();
-  manifestV2.permissions.push(...manifestV3.host_permissions);
+  manifestV2.web_accessible_resources =
+    (manifestV3.web_accessible_resources ?? [])
+      .flatMap((resource) => resource.resources);
+  manifestV2.permissions = [
+    ...(manifestV3.permissions ?? []),
+    ...(manifestV3.host_permissions ?? []),
+  ];
   return manifestV2;
 }
 
@@ -154,8 +153,8 @@ function adaptManifestToBrowser(manifest, browser) {
     // https://bugs.chromium.org/p/chromium/issues/detail?id=29683.
     for (const size in chromiumManifest?.icons) {
       if (size) {
-        chromiumManifest.icons[size] = path.join(
-          path.dirname(chromiumManifest.icons[size]), `${size}.png`,
+        chromiumManifest.icons[Number(size)] = path.join(
+          path.dirname(chromiumManifest.icons[Number(size)]), `${size}.png`,
         );
       }
     }
@@ -167,9 +166,10 @@ function adaptManifestToBrowser(manifest, browser) {
     // supports MV3, but its background and permission behavior differs.
     const firefoxManifest = convertMV3ToMV2(manifest);
     // Firefox scales the shared SVG source to the requested icon size.
-    delete firefoxManifest.icons['128'];
+    if (firefoxManifest.icons) delete firefoxManifest.icons[128];
     return firefoxManifest;
   }
+  throw new Error(`Unsupported browser: ${browser}`);
 }
 
 
@@ -181,14 +181,14 @@ function adaptManifestToBrowser(manifest, browser) {
 function getFilesToBeSynced(manifest) {
   const files = [];
   // Content script CSS (the JS will be taken care of by the bundler).
-  const contentScripts = manifest.content_scripts;
+  const contentScripts = manifest.content_scripts ?? [];
   for (const contentScript of contentScripts) {
     if (contentScript.css?.length) {
       files.push(...contentScript.css);
     }
   }
   // Web accessible resources.
-  const webAccessibleResources = manifest.web_accessible_resources;
+  const webAccessibleResources = manifest.web_accessible_resources ?? [];
   for (const webAccessibleResource of webAccessibleResources) {
     for (const resource of webAccessibleResource.resources) {
       files.push(resource);
@@ -238,8 +238,7 @@ function sync(file, distDir) {
  * @param {string} distDir - Directory of output file
  */
 async function buildIcon(svgIcon, icon, size, distDir) {
-  const regex = /\.(?<ext>(svg|png))$/;
-  const fileEnding = icon.match(regex).groups['ext'];
+  const fileEnding = path.extname(icon);
 
   const svgStr = fs.readFileSync(svgIcon, 'utf-8');
   const optimizedSVGStr = optimizeSVG(svgStr).data;
@@ -247,7 +246,7 @@ async function buildIcon(svgIcon, icon, size, distDir) {
   const targetDir = path.join(distDir, path.dirname(icon));
   if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, {recursive: true});
 
-  if (fileEnding === 'svg') {
+  if (fileEnding === '.svg') {
     console.log(`Optimizing ${icon} and writing to dist`);
     fs.writeFileSync(path.join(distDir, icon), optimizedSVGStr);
   } else {
@@ -255,9 +254,11 @@ async function buildIcon(svgIcon, icon, size, distDir) {
     // https://bugs.chromium.org/p/chromium/issues/detail?id=29683.
     console.log(
       `Converting ${svgIcon} to PNG and writing to dist`);
-    const puppeteerLaunchOptions = {executablePath: await executablePath()};
-    // Needed for puppeteer to work in GitHub workflows.
-    if (process.env.CI) puppeteerLaunchOptions.args = ['--no-sandbox'];
+    const puppeteerLaunchOptions = {
+      executablePath: await executablePath(),
+      // Needed for puppeteer to work in GitHub workflows.
+      args: process.env.CI ? ['--no-sandbox'] : [],
+    };
     const png =
         await svg2png(optimizedSVGStr, {
           launch: puppeteerLaunchOptions,
@@ -394,14 +395,16 @@ export async function build(browser, zip = false,
   const icons = browserSpecificManifest?.icons;
   if (icons) {
     for (const [size, icon] of Object.entries(icons)) {
-      await buildIcon(manifest.icons[size], icon, size, distDir);
+      const sourceIcon = manifest.icons?.[Number(size)];
+      if (!sourceIcon) throw new Error(`Missing source icon for size ${size}`);
+      await buildIcon(sourceIcon, icon, size, distDir);
     }
   }
 
   // Build content scripts.
-  const contentScripts = manifest.content_scripts;
+  const contentScripts = manifest.content_scripts ?? [];
   for (const contentScript of contentScripts) {
-    for (const script of contentScript.js) {
+    for (const script of contentScript.js ?? []) {
       console.log(`Building content script ${script} using esbuild`);
       await esbuild.build(esbuildOptions(script, distDir));
     }
@@ -439,6 +442,7 @@ function sourceSnapshot() {
   for (const entry of fs.readdirSync('.', {withFileTypes: true})) {
     if (entry.isFile() && entry.name.endsWith('.ts')) files.add(entry.name);
   }
+  /** @param {string} directory */
   const collect = (directory) => {
     for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
       const file = path.join(directory, entry.name);
@@ -548,7 +552,8 @@ async function main() {
     }
     console.log('\n');
   } else {
-    const browser = args[1];
+    // exitIfIncorrectArgs validated this command-line argument.
+    const browser = /** @type {Browser} */ (args[1]);
     const initial = sourceSnapshot();
     await build(browser, false, browserDist(browser), true);
     await watch(browser, initial);
