@@ -146,7 +146,10 @@ export function renderSubtitles(
   };
   let playback = new AbortController();
   const bindVideo = () => {
-    for (const name of ['timeupdate', 'seeked', 'pause', 'loadedmetadata']) {
+    // A paused seek changes the clock before buffering finishes. Waiting for
+    // seeked can leave the previous line visible for the entire download.
+    for (const name of ['timeupdate', 'seeking', 'seeked', 'pause',
+      'loadedmetadata']) {
       video.addEventListener(name, update, {signal: playback.signal});
     }
     video.addEventListener('play', play, {signal: playback.signal});
