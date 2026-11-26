@@ -58,7 +58,7 @@ Watch mode launches the browser through [web-ext](https://github.com/mozilla/web
 - `npm test` runs the mocked Jest suites. `npm run test-live` separately checks the real translation services; availability and rate limits can affect those opt-in tests.
 - `npm run test-coverage` runs Jest with coverage reporting.
 - `npm run lint` runs ESLint and Stylelint and fails if either check fails.
-- `npm run test-browser` runs Chromium and Firefox desktop integration tests using temporary builds/profiles and locally supplied server responses. See the browser integration section below for setup and coverage.
+- `npm run test-browser` runs Chromium and Firefox desktop integration tests using temporary builds/profiles and locally supplied server responses. Append `live` for actual YouTube compatibility checks. See the browser integration section below for setup and coverage.
 
 The browser suites also run in separate Chromium and Firefox CI jobs. Successful fixture tests do not establish live YouTube/provider availability or Android behavior.
 
@@ -79,7 +79,23 @@ npm run test-browser:chromium
 npm run test-browser:firefox
 ```
 
-Tests run the built extension with disposable profiles and local YouTube/provider responses, covering caption acquisition, translation messaging, UI, and navigation. Runs do not use live services.
+Tests run the built extension with disposable profiles and local YouTube/provider responses, covering caption acquisition, translation messaging, UI, and navigation. Default runs do not use live services.
+
+
+#### Live YouTube mode
+
+``` sh
+npm run test-browser live
+```
+
+Append `live` to either browser-specific command to select one browser. Live checks validate real YouTube metadata, caption/transcript formats, controls, rendering, and navigation using the same validators as the fixtures. Translation-provider checks remain separate: `npm run test-live`.
+
+- `YT_LIVE_VIDEOS=VIDEO_ID:LANGUAGE,...` overrides the default `Z9PRhksKFqU:pl`. Choose public non-English videos with source and English caption tracks.
+- `YT_LIVE_REPORT_DIR` sets the sanitized JSON report directory; the default is `eld-live-reports` under the system temporary directory.
+
+Blocked or unavailable checks are reported as **unverified** and fail the run. YouTube's documented empty caption HTTP 200 responses skip only native-payload validation; transcript fallback, rendering, and navigation must still pass (`pass-with-known-limitations`).
+
+Weekly/manual CI runs fixture and live checks with the latest Chromium snapshot and stable Firefox. Pull-request CI runs fixtures only. Review live failures and update fixtures manually when YouTube changes.
 
 ### Desktop Browser Profiles
 
