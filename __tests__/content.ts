@@ -56,6 +56,42 @@ describe('caption migration', () => {
     expect(getVideoLang(metadata)).toBeUndefined();
   });
 
+  it('updates both caption lines before a paused seek finishes', () => {
+    global.ResizeObserver = class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    };
+    const player = document.createElement('div');
+    const video = document.createElement('video');
+    player.append(video);
+    document.body.append(player);
+    const controller = new AbortController();
+    const updateTranslation = renderSubtitles(player, video, [
+      {start: 0, end: 10, text: 'Erste Zeile'},
+      {start: 10, end: 20, text: 'Zweite Zeile'},
+    ], 'de', controller.signal);
+    updateTranslation([
+      {start: 0, end: 10, text: 'First line'},
+      {start: 10, end: 20, text: 'Second line'},
+    ]);
+    try {
+      expect(video.paused).toBe(true);
+      expect(player.querySelector('.original-subtitle')?.textContent)
+        .toBe('Erste Zeile');
+      video.currentTime = 15;
+      // No seeked/timeupdate or animation frame arrives until media resumes.
+      video.dispatchEvent(new Event('seeking'));
+      expect(player.querySelector('.original-subtitle')?.textContent)
+        .toBe('Zweite Zeile');
+      expect(player.querySelector('.translated-subtitle')?.textContent)
+        .toBe('Second line');
+    } finally {
+      controller.abort();
+      player.remove();
+    }
+  });
+
   it('renders stationary words, handles seeking and cleans up on navigation',
     () => {
       global.ResizeObserver = class {
