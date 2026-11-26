@@ -1,28 +1,33 @@
 # Development Notes
 
-## Language and subtitle acquisition
+## How subtitles work
 
-Our captions start automatically for videos detected as non-English. Detection prefers audio explicitly labelled as original, followed by audio-track language IDs and unambiguous automatically generated captions. A translated caption being first or default does not identify the spoken language. When multiple manual-caption languages are the only evidence, the extension does not guess. This uses YouTube's information; the extension does not analyse the audio itself.
+### Execution contexts
 
-YouTube's native CC button controls only YouTube's captions; our overlay remains separate and currently has no visibility control. During initial caption acquisition, the extension may briefly enable native captions to obtain their request context, then restore the previous setting. If you interact with CC during that process, your choice takes precedence.
+- `content/main.ts` runs alongside YouTube's scripts, reads player metadata, observes caption downloads, and enables waiting for caption URL preparation when supported.
+- `content/isolated.ts` handles language selection, parsing, playback timing, and UI.
 
-Acquisition waits through ads without spending its timeout or toggling ad captions. Our overlay is hidden during ads and resumes against the content video's media element afterward.
+The scripts exchange messages. Caption replays reference saved requests by ID; account-related request headers remain in the page-side context.
 
-## Script isolation
+### Caption acquisition
 
-The browser separates YouTube's JavaScript from the extension's JavaScript. `content/main.ts` runs alongside YouTube's scripts so it can read information held by the player and observe caption downloads. It also enables YouTube's existing wait for caption URL preparation when the required feature is available. This can avoid a request being sent before its access token has been added; it does not guarantee the server will accept every request.
+1. Start automatically for non-English videos. Language detection uses YouTube metadata, preferring original-audio labels, then audio-track IDs and unambiguous automatic captions. Default/translated tracks and ambiguous manual-caption languages do not establish the spoken language.
+2. Reuse metadata and captions downloaded by YouTube's player (“native captions”), keeping their request context. Native captions have more precise timing.
+3. If native downloads repeatedly return empty responses, fail, or time out after 25 seconds excluding ads, use text and timestamps from YouTube's “Show transcript” service to render subtitles instead. This **transcript fallback** runs without opening the panel.
+4. Prefer cached English captions and existing English tracks over auto-translation. Transcript fallback retrieves English separately from an existing track.
 
-`content/isolated.ts` handles caption parsing, language selection, playback timing, and the interface. The two scripts exchange messages. Video information and successful caption downloads are reused rather than requested a second time. When another track is needed, the extension refers to a saved YouTube request by number; account-related request headers stay private in the page-side script.
+Startup recovery is bounded. Empty responses and HTTP errors are not automatically replayed. Transcript attempts are limited to one per track per video visit, including retries; HTTP 429 stops further transcript requests for that visit.
 
-Cached English captions and existing English tracks are preferred over auto-translation. Additional requests are not automatically repeated after an empty response or HTTP error, including HTTP 429. Startup recovery can ask the player to prepare another request a limited number of times. If English retrieval fails after source captions have loaded, those source captions and word lookup remain available. Intermittent startup failures with native CC already enabled, and empty responses even with tokens present, remain known limitations.
+Fallback implementation: `content/lib/transcriptPanelBridge.ts` and `content/lib/transcriptPanel.ts`.
 
-### Transcript fallback for unreliable CC downloads
+### Playback and limitations
 
-YouTube sometimes reports a successful CC download (HTTP 200) but sends no captions; the cause is unknown. When normal captions repeatedly arrive empty, fail, or do not load within 25 seconds (excluding ads), the extension can try the service behind “Show transcript” without opening the panel. Normal CC downloads remain preferred because their timing is more precise.
+- Native CC controls YouTube's captions independently of our overlay, which currently has no visibility control. Acquisition may temporarily enable CC, then restore its previous state; user changes take precedence.
+- Ads pause acquisition timeouts and hide the overlay. Playback resumes against the content video's media element; navigation cancels pending work.
+- English retrieval failures leave source captions and word lookup usable.
+- Known issues include empty HTTP 200 caption responses even with tokens present, and intermittent startup failures with CC already enabled. The transcript service is undocumented; its observed timing is rounded to whole seconds.
 
-The transcript fallback makes at most one attempt per track per video visit, including across startup retries. HTTP 429 means YouTube is limiting requests and stops further transcript requests for that visit. Leaving the video cancels pending work. English is fetched separately from an existing English track: if it fails, source-language subtitles and word lookup still work.
-
-The fallback lives in `content/lib/transcriptPanelBridge.ts` and `content/lib/transcriptPanel.ts`. A live Chromium check of `Z9PRhksKFqU` returned 115 Polish and 115 English segments and displayed both lines despite empty CC downloads. Saved, sanitized samples cover this in automated tests. The transcript service is undocumented and may also fail or change; its observed start times are rounded to whole seconds.
+See [browser integration tests](#browser-integration-tests) for verification.
 
 
 ## Building and Testing the Extension
