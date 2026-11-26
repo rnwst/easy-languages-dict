@@ -1,0 +1,56 @@
+name: Weekly live YouTube compatibility
+
+on:
+  schedule:
+    - cron: '23 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live:
+    name: Latest ${{ matrix.browser }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - browser: chromium
+            download: chromium@latest
+            executable: PUPPETEER_EXECUTABLE_PATH
+          - browser: firefox
+            download: firefox@stable
+            executable: FIREFOX_EXECUTABLE_PATH
+    env:
+      # Resolve versions afresh below instead of installing Puppeteer's pins.
+      PUPPETEER_SKIP_DOWNLOAD: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Download current browser and select its exact executable
+        id: browser
+        shell: bash
+        run: |
+          npx puppeteer browsers install '${{ matrix.download }}' --format '{{path}}' > "$RUNNER_TEMP/browser-install.txt"
+          cat "$RUNNER_TEMP/browser-install.txt"
+          browser_path="$(tail -n 1 "$RUNNER_TEMP/browser-install.txt")"
+          test -x "$browser_path"
+          echo '${{ matrix.executable }}'"=$browser_path" >> "$GITHUB_ENV"
+          "$browser_path" --version
+      - name: Fixture checks on latest browser
+        run: npm run test-browser:${{ matrix.browser }}
+      - name: Live YouTube checks on latest browser
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
+        env:
+          YT_LIVE_REPORT_DIR: ${{ runner.temp }}/youtube-live
+        run: npm run test-browser:${{ matrix.browser }} live
+      - name: Upload sanitized live results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: youtube-live-${{ matrix.browser }}
+          path: ${{ runner.temp }}/youtube-live/*.json
+          if-no-files-found: warn
+          retention-days: 30

@@ -1,5 +1,7 @@
 import fs from 'node:fs/promises';
 import {browserName} from './harness.js';
+import {productionParsers, validateMetadata, validateNativeCaptions,
+  validateTranscript} from './contracts.js';
 
 const videoId = 'abcdefghijk';
 export const watchURL = `https://www.youtube.com/watch?v=${videoId}`;
@@ -13,6 +15,7 @@ export async function fixture(browser, t, options = {}) {
     panelEnglishStatus = 200, emptyEnglish = false,
     panelDelayed = false} = options;
   const version = await browser.version();
+  const parsers = await productionParsers();
   const page = await browser.newPage();
   const requests = [];
   const panelRequests = [];
@@ -62,6 +65,7 @@ export async function fixture(browser, t, options = {}) {
       audioTrackId: `${audioLanguage ?? language}.0`, captionTrackIndices: [0],
     }];
   }
+  validateMetadata(metadata, videoId, language);
   const nativeURL = `/api/timedtext?v=${videoId}&` +
     `lang=${scenario === 'fresh-signature' ? 'en' : language}` +
     '&signature=fresh&ei=fresh&expire=fresh&sparams=v,ei,expire' +
@@ -203,6 +207,10 @@ export async function fixture(browser, t, options = {}) {
         const data = await fs.readFile(new URL(
           `../fixtures/panel-${english ? 'en' : 'pl'}.json`, import.meta.url),
         'utf8');
+        if (status === 200) {
+          validateTranscript(JSON.parse(data), 'Z9PRhksKFqU',
+            parsers.parseTranscriptPanel);
+        }
         await request.respond({status, contentType: 'application/json',
           body: status === 200 ? data.replaceAll('Z9PRhksKFqU', videoId) : ''});
       } else if (url.pathname === '/api/timedtext') {
@@ -223,15 +231,18 @@ export async function fixture(browser, t, options = {}) {
           (existingEnglish && url.searchParams.get('lang') === 'en-GB');
         const status = url.searchParams.get('v') === 'advertisement' ? 429 :
           bad ? 403 : english ? englishStatus : 200;
-        await request.respond({status,
-          contentType: 'application/json', body: status !== 200 || empty ? '' :
-            JSON.stringify({events: [
-              {tStartMs: 0, dDurationMs: 10000, segs: [{utf8: english ?
-                'Hello world' :
-                'Hallo Welt und mehrere weitere Worte bis zum letzten Wort'}]},
-              {tStartMs: 10000, dDurationMs: 50000,
-                segs: [{utf8: english ? 'Second line' : 'Zweite Zeile'}]},
-            ]})});
+        const data = {events: [
+          {tStartMs: 0, dDurationMs: 10000, segs: [{utf8: english ?
+            'Hello world' :
+            'Hallo Welt und mehrere weitere Worte bis zum letzten Wort'}]},
+          {tStartMs: 10000, dDurationMs: 50000,
+            segs: [{utf8: english ? 'Second line' : 'Zweite Zeile'}]},
+        ]};
+        if (status === 200 && !empty) {
+          validateNativeCaptions(data, parsers.parseCaptions);
+        }
+        await request.respond({status, contentType: 'application/json',
+          body: status !== 200 || empty ? '' : JSON.stringify(data)});
       } else {
         // Nothing escapes to YouTube, favicon servers, or other web origins.
         await request.respond({status: 204, body: ''});

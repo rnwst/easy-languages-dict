@@ -13,9 +13,9 @@
     "test": "jest --verbose",
     "test-live": "jest --config jest.live.config.js --verbose --runInBand",
     "type-check": "tsc --noEmit",
-    "test-browser": "node --test --test-concurrency=1 __tests__/browser/chromium.test.mjs __tests__/browser/firefox.test.mjs",
-    "test-browser:chromium": "node --test __tests__/browser/chromium.test.mjs",
-    "test-browser:firefox": "node --test __tests__/browser/firefox.test.mjs",
+    "test-browser": "node scripts/test-browser.js",
+    "test-browser:chromium": "node scripts/test-browser.js chromium",
+    "test-browser:firefox": "node scripts/test-browser.js firefox",
     "test-coverage": "jest --coverage"
   },
   "license": "GPL-2.0-or-later",

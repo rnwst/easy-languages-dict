@@ -12,15 +12,15 @@ export function browserName(browser) {
 }
 
 export async function buildFixtures(browser = 'chromium',
-  label = 'translation') {
+  label = 'translation', {live = false} = {}) {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'eld-browser-'));
   try {
     const production = path.join(directory, 'production');
     const development = path.join(directory, 'development');
     await build(browser, false, production);
-    if (browser === 'chromium') {
+    if (browser === 'chromium' && !live) {
       await build(browser, false, development, true);
-    } else {
+    } else if (browser === 'firefox' && !live) {
       // BiDi does not expose Firefox's MV2 background page as a target.
       // Stub only fetch, before the real background listeners start. Installing
       // it at startup also preserves the stub after an event-page restart.

@@ -3,6 +3,10 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import {buildFixtures, launch, install, translations} from './harness.js';
 import {fixture, watchURL} from './fixture.js';
+import {productionParsers, readPlayerState, validatePlayer, validateMetadata,
+  validateNativeCaptions, validateTranscript} from './contracts.js';
+import {observePage, pageMetadata, responseJSON, until, clickNativeCC}
+  from './live/support.js';
 
 export let artifacts;
 export let productionBrowser;
@@ -32,12 +36,99 @@ export function setup(browserName) {
 }
 
 export async function healthy(f) {
+  validatePlayer(await f.page.evaluate(readPlayerState));
   assert.deepEqual(f.errors, []);
   assert(!f.logs.some(line => line.includes('Extension context invalidated')));
   const count = await f.page.$$eval('.subtitle-container',
     nodes => nodes.length);
   assert.equal(count, 1, 'Exactly one subtitle UI');
 }
+
+// Verify the live observer's browser APIs on controlled data too. These remain
+// fixture tests: only the explicit live entry points visit the real site.
+for (const panel of [false, true]) {
+  test(`live observer contract plumbing (transcript: ${panel})`, async t => {
+    const f = await fixture(productionBrowser, t, panel ? {
+      scenario: 'panel-empty', panel: true, language: 'pl',
+      existingEnglish: true,
+    } : {});
+    const capture = await observePage(f.page);
+    t.after(() => capture.close());
+    await f.open();
+    if (panel) {
+      // The saved panel sample starts at 76s, unlike the native fixture at 0s.
+      await f.page.$eval('video', video => video.currentTime = 89.8);
+    }
+    await f.mounted();
+    const videoId = new URL(watchURL).searchParams.get('v');
+    validateMetadata(await f.page.evaluate(pageMetadata, videoId), videoId);
+    const entry = await until(() => capture.responses.find(entry =>
+      entry.kind === (panel ? 'panel' : 'native') && entry.complete &&
+        entry.status === 200 && entry.body), 5000);
+    const data = responseJSON(entry);
+    const parsers = await productionParsers();
+    if (panel) {
+      validateTranscript(data, videoId, parsers.parseTranscriptPanel);
+      assert(entry.params, 'Capture the real POST track-selection parameters');
+    } else validateNativeCaptions(data, parsers.parseCaptions);
+    assert(await f.page.evaluate(() =>
+      window.__eldLive.messages.VIDEO_METADATA > 0));
+    assert(!JSON.stringify(capture.summary()).includes('signature'));
+    assert(!JSON.stringify(capture.summary()).includes('body'));
+    await healthy(f);
+  });
+}
+
+test('live CC checks observe a transient trusted state change', async t => {
+  const f = await fixture(productionBrowser, t);
+  const capture = await observePage(f.page);
+  t.after(() => capture.close());
+  await f.open();
+  await f.mounted();
+  await f.page.evaluate(() => {
+    const button = document.querySelector('.ytp-subtitles-button');
+    // Model YouTube enabling CC, then resetting it after an empty response.
+    button.addEventListener('click', () => {
+      button.setAttribute('aria-pressed', 'false');
+    }, {once: true});
+  });
+  await clickNativeCC(f.page);
+  assert.equal(await f.page.$eval('.ytp-subtitles-button', button =>
+    button.getAttribute('aria-pressed')), 'false');
+  await healthy(f);
+});
+
+test('live controls reject a late consent lightbox', async t => {
+  const f = await fixture(productionBrowser, t);
+  const capture = await observePage(f.page);
+  t.after(() => capture.close());
+  await f.open();
+  await f.mounted();
+  await f.page.evaluate(() => {
+    const dialog = document.createElement('ytd-consent-bump-v2-lightbox');
+    dialog.style.cssText =
+      'position:fixed;inset:0;z-index:999999;background:#fff';
+    const button = document.createElement('button');
+    button.textContent = 'Reject all';
+    button.addEventListener('click', event => {
+      window.rejectedConsent = event.isTrusted;
+      // YouTube retains the outer custom element after closing the dialog.
+      button.style.display = 'none';
+      dialog.style.cssText = '';
+      // Player startup can change CC while the test is dismissing consent.
+      document.querySelector('.ytp-subtitles-button')
+        .setAttribute('aria-pressed', 'true');
+    });
+    dialog.append(button);
+    document.body.append(dialog);
+  });
+  await clickNativeCC(f.page);
+  assert.equal(await f.page.evaluate(() => window.rejectedConsent), true);
+  assert.equal(await f.page.evaluate(() => window.__eldLive.ccBefore), 'true');
+  assert.equal(await f.page.$eval('.ytp-subtitles-button', button =>
+    button.getAttribute('aria-pressed')), 'false');
+  await healthy(f);
+});
 
 test('production startup races use native responses', {concurrency: 3},
   async t => {
