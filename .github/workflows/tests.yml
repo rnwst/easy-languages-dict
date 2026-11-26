@@ -6,6 +6,13 @@ on:
     paths:
       - '**/*.ts'
       - '**/*.js'
+      - '**/*.mjs'
+      - '**/*.css'
+      - '__tests__/fixtures/**'
+      - 'icons/**'
+      - 'tsconfig.json'
+      - '.github/workflows/tests.yml'
+      - '.github/actions/setup/**'
       - 'manifest.json'
       - 'package.json'
       - 'package-lock.json'
@@ -13,6 +20,13 @@ on:
     paths:
       - '**/*.ts'
       - '**/*.js'
+      - '**/*.mjs'
+      - '**/*.css'
+      - '__tests__/fixtures/**'
+      - 'icons/**'
+      - 'tsconfig.json'
+      - '.github/workflows/tests.yml'
+      - '.github/actions/setup/**'
       - 'manifest.json'
       - 'package.json'
       - 'package-lock.json'
@@ -25,3 +39,21 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
       - run: npm test
+  browsers:
+    name: Browser tests (${{ matrix.browser }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - browser: chromium
+            binary: chrome
+          - browser: firefox
+            binary: firefox
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Install browser
+        run: npx puppeteer browsers install ${{ matrix.binary }}
+      - run: npm run test-browser:${{ matrix.browser }}
