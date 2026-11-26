@@ -1,3 +1,6 @@
+import fs from 'node:fs/promises';
+import {browserName} from './harness.js';
+
 const videoId = 'abcdefghijk';
 export const watchURL = `https://www.youtube.com/watch?v=${videoId}`;
 
@@ -9,8 +12,8 @@ export async function fixture(browser, t, options = {}) {
     adStartup = 0, panel = false, panelStatus = 200,
     panelEnglishStatus = 200, emptyEnglish = false,
     panelDelayed = false} = options;
+  const version = await browser.version();
   const page = await browser.newPage();
-  await page.setViewport({width: 800, height: 600});
   const requests = [];
   const panelRequests = [];
   let releasePanel;
@@ -27,6 +30,16 @@ export async function fixture(browser, t, options = {}) {
   let release;
   const gate = delayed ? new Promise(resolve => release = resolve) :
     Promise.resolve();
+  t.after(async () => {
+    if (!t.passed) t.diagnostic(JSON.stringify({
+      browser: version, scenario, requests, panelRequests,
+      logs, errors, documents,
+    }));
+    release?.();
+    releasePanel?.();
+    if (!page.isClosed()) await page.close();
+  });
+  await page.setViewport({width: 800, height: 600});
   const metadata = {
     videoDetails: {videoId},
     captions: {playerCaptionsTracklistRenderer: {captionTracks: [{
@@ -153,17 +166,20 @@ export async function fixture(browser, t, options = {}) {
       },${adStartup});
     }
     </script></body></html>`;
-  // Chromium's debugging protocol also reports warnings from extension scripts
-  // that Puppeteer's page.on('console') can miss.
-  const cdp = await page.createCDPSession();
-  cdp.on('Runtime.consoleAPICalled', event => {
-    const text = event.args.map(arg => arg.value ?? arg.description ?? '')
-      .join(' ');
+  const log = text => {
     logs.push(text);
     if (text.includes('No usable native captions arrived')) startupFailure();
     if (text.includes('English captions unavailable')) translationFailure();
-  });
-  await cdp.send('Runtime.enable');
+  };
+  if (browserName(browser) === 'chromium') {
+    // CDP also reports isolated-script warnings missed by page.on('console').
+    const cdp = await page.createCDPSession();
+    cdp.on('Runtime.consoleAPICalled', event => log(event.args
+      .map(arg => arg.value ?? arg.description ?? '').join(' ')));
+    await cdp.send('Runtime.enable');
+  } else {
+    page.on('console', message => log(message.text()));
+  }
   page.on('pageerror', error => errors.push(error.message));
   await page.setRequestInterception(true);
   page.on('request', async request => {
@@ -179,7 +195,7 @@ export async function fixture(browser, t, options = {}) {
         await request.respond({contentType: 'application/json',
           body: JSON.stringify(metadata)});
       } else if (url.pathname === '/youtubei/v1/get_panel') {
-        const body = JSON.parse(request.postData());
+        const body = JSON.parse(await request.fetchPostData());
         panelRequests.push(body);
         await panelGate;
         const english = Buffer.from(body.params, 'base64').includes('.en');
@@ -195,7 +211,7 @@ export async function fixture(browser, t, options = {}) {
           await new Promise(resolve => setTimeout(resolve, 1500));
         }
         await gate;
-        if (request.failure()?.errorText === 'net::ERR_ABORTED') return;
+        if (aborted(request)) return;
         const bad = scenario === 'fresh-signature' &&
           url.searchParams.get('signature') !== 'fresh';
         const empty = scenario === 'panel-empty' ||
@@ -221,18 +237,10 @@ export async function fixture(browser, t, options = {}) {
         await request.respond({status: 204, body: ''});
       }
     } catch (error) {
-      if (!page.isClosed() &&
-          request.failure()?.errorText !== 'net::ERR_ABORTED') {
+      if (!page.isClosed() && !aborted(request)) {
         errors.push(String(error));
       }
     }
-  });
-  t.after(async () => {
-    if (!t.passed) t.diagnostic(JSON.stringify({scenario, requests, logs,
-      errors, documents}));
-    release?.();
-    releasePanel?.();
-    if (!page.isClosed()) await page.close();
   });
   return {page, requests, panelRequests, logs, errors, startupFailed,
     translationFailed, releasePanel: () => releasePanel?.(),
@@ -241,4 +249,8 @@ export async function fixture(browser, t, options = {}) {
     open: () => page.goto(watchURL, {waitUntil: 'load'}),
     mounted: () => page.waitForSelector('.subtitle-word', {timeout: 15000})};
 }
-import fs from 'node:fs/promises';
+
+function aborted(request) {
+  return /^(net::ERR_ABORTED|NS_BINDING_ABORTED)$/.test(
+    request.failure()?.errorText ?? '');
+}

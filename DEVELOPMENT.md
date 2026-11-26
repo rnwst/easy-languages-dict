@@ -53,14 +53,28 @@ Watch mode launches the browser through [web-ext](https://github.com/mozilla/web
 - `npm test` runs the mocked Jest suites. `npm run test-live` separately checks the real translation services; availability and rate limits can affect those opt-in tests.
 - `npm run test-coverage` runs Jest with coverage reporting.
 - `npm run lint` runs ESLint and Stylelint and fails if either check fails.
-- `npm run test-browser` runs opt-in Chromium integration tests using temporary builds/profiles and locally supplied server responses. See [browser test setup and coverage](./__tests__/browser/README.md).
+- `npm run test-browser` runs Chromium and Firefox desktop integration tests using temporary builds/profiles and locally supplied server responses. See the browser integration section below for setup and coverage.
 
-The automated browser suite currently covers Chromium only. Its successful fixture tests do not establish live YouTube/provider availability or Firefox/Android behavior.
+The browser suites also run in separate Chromium and Firefox CI jobs. Successful fixture tests do not establish live YouTube/provider availability or Android behavior.
 
 TypeScript is pinned to 6.0.3: `typescript-eslint` 8.74 supports TypeScript versions below 6.1, and the build's type-check plugin uses the compiler API removed in TypeScript 7. Upgrade the lint integration and build plugin before moving to TypeScript 7. Other direct dependencies use their latest stable releases as of November 2026.
 
 The scoped `babel-jest` override aligns the legacy syntax plugins' Babel peer requirements with Babel 8. `babel-preset-current-node-syntax` explicitly omits those Babel-7-only plugins when running with Babel 8, but still installs them. Remove the override when that preset's dependencies support Babel 8 directly.
 
+
+### Browser integration tests
+
+Install compatible browsers and run from the repository root:
+
+```sh
+npx puppeteer browsers install chrome
+npx puppeteer browsers install firefox
+npm run test-browser           # Both browsers
+npm run test-browser:chromium
+npm run test-browser:firefox
+```
+
+Tests run the built extension with disposable profiles and local YouTube/provider responses, covering caption acquisition, translation messaging, UI, and navigation. Runs do not use live services.
 
 ### Desktop Browser Profiles
 
